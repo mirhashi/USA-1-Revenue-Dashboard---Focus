@@ -1,0 +1,3296 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Q4 2026 — USA1 Revenue Dashboard · Focus Softnet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#12151b;--panel:#1a1f27;--panel2:#1f2530;--border:#2b323d;
+  --text:#e9e7e0;--dim:#8b93a0;--faint:#5b6270;
+  --gold:#c9a24b;--gold-dim:#2e2614;
+  --hot:#d6553a;--hot-dim:#3a2620;
+  --warm:#d9a23b;--warm-dim:#39301c;
+  --cold:#4c86c9;--cold-dim:#1f2c3a;
+  --green:#5a9b6e;--green-dim:#1a2e22;
+  --oct:#7c6bbf;--nov:#4c86c9;--dec:#5a9b6e;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh;}
+.wrap{max-width:1280px;margin:0 auto;padding:0 28px 100px;}
+
+/* HEADER */
+header{border-bottom:1px solid var(--border);padding:32px 0 22px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:20px;}
+.brand-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;color:var(--faint);margin-bottom:8px;}
+h1{font-family:'Newsreader',serif;font-weight:500;font-size:34px;margin:0;letter-spacing:-.01em;}
+h1 em{font-style:italic;color:var(--gold);font-weight:400;}
+.hstats{display:flex;gap:32px;align-items:baseline;}
+.hs{text-align:right;}
+.hs .num{font-family:'Newsreader',serif;font-size:26px;font-weight:500;display:block;line-height:1.1;}
+.hs .lbl{font-size:11px;color:var(--dim);margin-top:3px;display:block;}
+
+/* TABS */
+.tabbar{display:flex;gap:2px;margin:24px 0 20px;border-bottom:1px solid var(--border);}
+.tabbtn{background:none;border:none;color:var(--dim);font-family:'IBM Plex Sans',sans-serif;font-size:14px;font-weight:500;padding:10px 0;margin-right:26px;cursor:pointer;position:relative;top:1px;border-bottom:2px solid transparent;transition:color .15s;}
+.tabbtn:hover{color:var(--text);}
+.tabbtn.active{color:var(--text);border-bottom-color:var(--gold);}
+
+section.view{display:none;}
+section.view.active{display:block;}
+
+/* SUMMARY BAND */
+.summary-band{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px;}
+.scard{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:16px 18px;position:relative;overflow:hidden;}
+.scard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.scard.oct::before{background:var(--oct);}
+.scard.nov::before{background:var(--nov);}
+.scard.dec::before{background:var(--dec);}
+.scard.total::before{background:var(--gold);}
+.scard.pipeline::before{background:var(--warm);}
+.scard.combined::before{background:var(--green);}
+.scard.hot::before{background:var(--hot);}
+.scard.warm::before{background:var(--warm);}
+.scard.cold::before{background:var(--cold);}
+.scard-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--faint);margin-bottom:8px;}
+.scard-val{font-family:'Newsreader',serif;font-size:24px;font-weight:500;line-height:1.1;}
+.scard-sub{font-size:11px;color:var(--dim);margin-top:4px;}
+.scard.clickable{cursor:pointer;transition:border-color .15s;}
+.scard.clickable:hover{border-color:var(--gold);}
+.scard.selected{border-color:var(--gold);background:#1e1d14;}
+
+/* MONTH DRILL */
+.month-drill{display:none;background:var(--panel);border:1px solid var(--gold);border-radius:10px;padding:22px 24px;margin-bottom:16px;animation:fadeIn .18s ease;}
+.month-drill.show{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+.drill-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.drill-title{font-family:'Newsreader',serif;font-size:20px;}
+.drill-close{background:none;border:1px solid var(--border);color:var(--dim);width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;}
+.drill-close:hover{color:var(--text);border-color:var(--dim);}
+
+/* TABLES — scrollable with sticky headers */
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:6px 0 12px;margin-bottom:14px;}
+.panel-head{display:flex;justify-content:space-between;align-items:center;padding:14px 20px 10px;border-bottom:1px solid var(--border);margin-bottom:0;}
+.panel-title{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:var(--faint);}
+.panel-actions{display:flex;gap:8px;}
+
+.table-scroll{overflow-y:auto;max-height:520px;} /* scrollable area */
+.table-scroll table{width:100%;border-collapse:collapse;}
+.table-scroll thead th{
+  position:sticky;top:0;z-index:2;
+  text-align:left;font-family:'IBM Plex Mono',monospace;font-size:10.5px;
+  letter-spacing:.05em;color:var(--faint);font-weight:500;
+  padding:10px 16px 10px;
+  background:var(--panel);
+  border-bottom:1px solid var(--border);
+  border-top:1px solid var(--border);
+}
+.table-scroll thead th.r{text-align:right;}
+.table-scroll tbody tr{border-bottom:1px solid var(--border);transition:background .1s;cursor:pointer;}
+.table-scroll tbody tr:last-child{border-bottom:none;}
+.table-scroll tbody tr:hover{background:var(--panel2);}
+.table-scroll tbody td{padding:11px 16px;font-size:13px;vertical-align:middle;}
+td.name{font-weight:600;}
+td.mono{font-family:'IBM Plex Mono',monospace;color:var(--dim);text-align:right;}
+td.mono.highlight{color:var(--text);}
+.total-row td{font-weight:600;font-size:13px;background:var(--panel2);position:sticky;bottom:0;z-index:2;}
+/* keep drill tables simple (no scroll wrapper) */
+.drill-table{width:100%;border-collapse:collapse;}
+.drill-table th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.05em;color:var(--faint);font-weight:500;padding:0 16px 9px;border-bottom:1px solid var(--border);}
+.drill-table th.r{text-align:right;}
+.drill-table tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
+.drill-table tbody tr:last-child{border-bottom:none;}
+.drill-table tbody td{padding:9px 16px;font-size:13px;vertical-align:middle;}
+.drill-table .total-row td{font-weight:600;background:var(--panel2);}
+
+/* PILLS / BADGES */
+.type-pill{font-size:10.5px;padding:2px 8px;border-radius:20px;border:1px solid var(--border);background:var(--panel2);color:var(--dim);display:inline-block;}
+.type-pill.customer{border-color:#3a4a38;color:var(--green);background:var(--green-dim);}
+.type-pill.opportunity{border-color:#39301c;color:var(--warm);background:var(--warm-dim);}
+.type-pill.new{border-color:#2e2614;color:var(--gold);background:var(--gold-dim);}
+.temp-badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;cursor:pointer;padding:2px 8px;border-radius:12px;border:1px solid transparent;transition:all .12s;}
+.temp-badge:hover{filter:brightness(1.25);}
+.temp-badge.Hot{background:var(--hot-dim);color:var(--hot);border-color:#5a3028;}
+.temp-badge.Warm{background:var(--warm-dim);color:var(--warm);border-color:#5a4a28;}
+.temp-badge.Cold{background:var(--cold-dim);color:var(--cold);border-color:#283a5a;}
+.temp-badge.Confirmed{background:var(--green-dim);color:var(--green);border-color:#2a4a30;}
+.temp-badge .dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+.upsell-tag{font-size:10px;background:#2e2614;color:var(--gold);padding:1px 7px;border-radius:10px;border:1px solid #5a4a28;margin-left:6px;}
+.curr-tag{font-size:10px;background:var(--cold-dim);color:var(--cold);padding:1px 6px;border-radius:10px;font-family:'IBM Plex Mono',monospace;}
+.new-tag{font-size:10px;background:var(--gold-dim);color:var(--gold);padding:1px 7px;border-radius:10px;border:1px solid #5a4a28;margin-left:6px;}
+
+/* MONTH CELLS */
+td.m-oct{color:#a599e0;}
+td.m-nov{color:#7aaee0;}
+td.m-dec{color:#7ac8a0;}
+td.zero{color:var(--faint);}
+
+/* NOTES EXPAND in pipeline */
+.notes-row{background:var(--panel2)!important;cursor:default!important;}
+.notes-row td{padding:6px 16px 12px 16px!important;border-bottom:1px solid var(--border);}
+.notes-row:hover{background:var(--panel2)!important;}
+.notes-cell{display:flex;flex-direction:column;gap:6px;}
+.notes-entry{display:flex;gap:10px;align-items:flex-start;}
+.notes-dot{width:6px;height:6px;border-radius:50%;background:var(--faint);margin-top:5px;flex-shrink:0;}
+.notes-text{font-size:12.5px;color:var(--dim);line-height:1.5;flex:1;}
+.notes-meta{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--faint);margin-top:2px;}
+.add-note-row{display:flex;gap:8px;margin-top:8px;}
+.add-note-row input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:12px;outline:none;}
+.add-note-row input:focus{border-color:var(--gold);}
+.add-note-row input::placeholder{color:var(--faint);}
+.add-note-btn{background:none;border:1px solid var(--border);color:var(--dim);font-size:11px;padding:6px 10px;border-radius:6px;cursor:pointer;white-space:nowrap;}
+.add-note-btn:hover{border-color:var(--gold);color:var(--gold);}
+.pipe-name-row{display:flex;align-items:center;gap:4px;}
+.expand-btn{background:none;border:none;color:var(--faint);font-size:11px;cursor:pointer;padding:2px 4px;line-height:1;transition:color .12s;}
+.expand-btn:hover{color:var(--gold);}
+.expand-btn.open{color:var(--gold);}
+
+/* PIPELINE RATING BAR */
+.rating-bar{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:14px;display:flex;gap:24px;align-items:center;flex-wrap:wrap;}
+.rb-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--faint);margin-bottom:2px;}
+.rb-group{display:flex;flex-direction:column;}
+.rb-val{font-family:'Newsreader',serif;font-size:18px;font-weight:500;}
+.rb-val.hot-c{color:var(--hot);}
+.rb-val.warm-c{color:var(--warm);}
+.rb-val.cold-c{color:var(--cold);}
+.rb-val.conf-c{color:var(--green);}
+.rb-val.total-c{color:var(--gold);}
+.rb-sub{font-size:10px;color:var(--faint);}
+.rb-divider{width:1px;background:var(--border);height:36px;align-self:center;}
+.rb-bar-wrap{flex:1;min-width:180px;}
+.rb-track{height:8px;background:var(--panel2);border-radius:4px;overflow:hidden;display:flex;gap:1px;}
+.rb-seg{height:100%;border-radius:2px;transition:width .3s ease;}
+.rb-seg.hot{background:var(--hot);}
+.rb-seg.warm{background:var(--warm);}
+.rb-seg.cold{background:var(--cold);}
+.rb-seg.conf{background:var(--green);}
+
+/* BUTTONS */
+.btn{background:none;border:1px solid var(--border);color:var(--dim);font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:500;padding:6px 13px;border-radius:6px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;}
+.btn:hover{border-color:var(--dim);color:var(--text);}
+.btn.primary{border-color:var(--gold);color:var(--gold);}
+.btn.primary:hover{background:var(--gold-dim);}
+.btn.export{border-color:#3a4a38;color:var(--green);}
+.btn.export:hover{background:var(--green-dim);}
+
+/* ADD PROSPECT MODAL */
+.overlay{position:fixed;inset:0;background:rgba(8,10,14,.65);opacity:0;pointer-events:none;transition:opacity .2s;z-index:40;}
+.overlay.show{opacity:1;pointer-events:auto;}
+.modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-48%);width:440px;max-width:95vw;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:28px 30px;z-index:41;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;}
+.modal.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%);}
+.modal h3{font-family:'Newsreader',serif;font-weight:500;font-size:20px;margin-bottom:20px;}
+.form-row{margin-bottom:14px;}
+.form-row label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;color:var(--faint);display:block;margin-bottom:5px;}
+.form-row input,.form-row select,.form-row textarea{width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:13px;outline:none;transition:border-color .15s;}
+.form-row textarea{resize:vertical;min-height:70px;line-height:1.5;}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--gold);}
+.form-row input::placeholder,.form-row textarea::placeholder{color:var(--faint);}
+.form-row select option{background:var(--panel2);}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+
+/* DRAWER */
+.drawer{position:fixed;top:0;right:0;bottom:0;width:400px;max-width:92vw;background:var(--panel);border-left:1px solid var(--border);transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);z-index:41;padding:28px 26px;overflow-y:auto;}
+.drawer.show{transform:translateX(0);}
+.drawer-close{background:none;border:1px solid var(--border);color:var(--dim);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;float:right;}
+.drawer-close:hover{color:var(--text);border-color:var(--dim);}
+.dtag{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.05em;color:var(--faint);margin-bottom:7px;clear:both;padding-top:4px;}
+.drawer h2{font-family:'Newsreader',serif;font-weight:500;font-size:22px;margin:0 0 18px;line-height:1.25;}
+.df{margin-bottom:16px;}
+.df .fl{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;color:var(--faint);margin-bottom:4px;}
+.df .fv{font-size:14px;}
+.comment-box{background:var(--panel2);border:1px solid var(--border);border-radius:7px;padding:14px 16px;font-size:13.5px;line-height:1.6;color:var(--text);margin-top:4px;}
+.ratepicker{display:flex;gap:7px;}
+.ratebtn{flex:1;border:1px solid var(--border);background:var(--panel2);color:var(--dim);font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:600;padding:8px 0;border-radius:7px;cursor:pointer;transition:all .15s;}
+.ratebtn:hover{border-color:var(--dim);color:var(--text);}
+.ratebtn.Hot.on{background:var(--hot-dim);border-color:var(--hot);color:var(--hot);}
+.ratebtn.Warm.on{background:var(--warm-dim);border-color:var(--warm);color:var(--warm);}
+.ratebtn.Cold.on{background:var(--cold-dim);border-color:var(--cold);color:var(--cold);}
+.ratebtn.Confirmed.on{background:var(--green-dim);border-color:var(--green);color:var(--green);}
+.month-edit{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px;}
+.month-edit input{background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px;outline:none;width:100%;}
+.month-edit input:focus{border-color:var(--gold);}
+.month-labels{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--faint);margin-bottom:4px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--panel);border:1px solid var(--border);color:var(--text);font-size:12px;padding:8px 16px;border-radius:20px;opacity:0;transition:opacity .18s,transform .18s;z-index:60;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+.section-gap{height:14px;}
+
+footer{text-align:center;color:var(--faint);font-size:11px;padding-top:40px;font-family:'IBM Plex Mono',monospace;}
+
+/* CONVERT TO CUSTOMER */
+.convert-btn{display:block;width:100%;margin-top:14px;padding:9px 0;background:var(--green-dim);border:1px solid var(--green);color:var(--green);border-radius:7px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:.03em;transition:all .15s;}
+.convert-btn:hover{background:var(--green);color:#111;}
+
+/* CONVERT MODAL */
+#convertModal{width:440px;}
+#convertModal h3{margin-bottom:4px;}
+.convert-prospect-name{font-family:'Newsreader',serif;font-size:17px;color:var(--gold);margin-bottom:18px;}
+.convert-month-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:8px 0 14px;}
+.cmg-col label{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--faint);margin-bottom:5px;}
+.cmg-col input{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px;padding:7px 10px;border-radius:6px;outline:none;}
+.cmg-col input:focus{border-color:var(--gold);}
+.convert-info{font-size:12px;color:var(--dim);margin-bottom:14px;line-height:1.5;}
+
+/* INLINE EDIT in Collections table */
+td.mono.editable{cursor:pointer;position:relative;}
+td.mono.editable:hover::after{content:'✎';position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--faint);}
+td.mono.editable input.inline-edit{width:90px;background:var(--panel2);border:1px solid var(--gold);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:3px 6px;border-radius:4px;outline:none;text-align:right;}
+.col-edit-row td{padding:0!important;}
+.col-edit-bar{display:flex;gap:8px;align-items:center;padding:10px 16px;background:var(--panel2);}
+.col-edit-bar label{font-size:11px;color:var(--dim);font-family:'IBM Plex Mono',monospace;letter-spacing:.04em;}
+.col-edit-bar input{width:100px;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px;padding:5px 8px;border-radius:5px;outline:none;}
+.col-edit-bar input:focus{border-color:var(--gold);}
+.col-edit-bar .btn{padding:5px 12px;font-size:12px;}
+
+@media(max-width:900px){
+  .summary-band{grid-template-columns:repeat(3,1fr);}
+  header{flex-direction:column;align-items:flex-start;}
+  .rating-bar{gap:14px;}
+}
+@media(max-width:600px){
+  .summary-band{grid-template-columns:repeat(2,1fr);}
+  .wrap{padding:0 14px 80px;}
+}
+
+/* ── YEAR TARGET BANNER ────────────────────────────────────────────────── */
+.ytd-banner{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px 24px;margin-bottom:20px;display:flex;align-items:flex-start;gap:0;justify-content:space-between;}
+.ytd-left{display:flex;align-items:flex-start;gap:0;flex:1;flex-wrap:wrap;row-gap:12px;}
+.ytd-block{padding:0 24px;}
+.ytd-block:first-child{padding-left:0;}
+.ytd-divider{width:1px;background:var(--border);align-self:stretch;margin:0;}
+.ytd-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.07em;color:var(--faint);margin-bottom:5px;text-transform:uppercase;}
+.ytd-val{font-family:'Newsreader',serif;font-size:22px;font-weight:500;line-height:1.1;}
+.ytd-val.green{color:#4ade80;}
+.ytd-val.amber{color:#fbbf24;}
+.ytd-sub{font-size:11px;color:var(--dim);margin-top:3px;}
+.ytd-edit-row{display:flex;gap:6px;margin-top:6px;align-items:center;}
+.ytd-input{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:4px 8px;border-radius:5px;width:140px;outline:none;}
+.ytd-input:focus{border-color:var(--gold);}
+.ytd-save-btn{background:var(--gold-dim);border:1px solid var(--gold);color:var(--gold);font-size:11px;padding:4px 10px;border-radius:5px;cursor:pointer;}
+.ytd-save-btn:hover{background:rgba(201,162,75,.2);}
+.ytd-progress-wrap{flex-basis:100%;padding:0;}
+.ytd-progress-track{height:5px;background:rgba(255,255,255,.07);border-radius:3px;margin-top:8px;overflow:hidden;position:relative;}
+.ytd-progress-fill{height:100%;background:#4ade80;border-radius:3px;transition:width .5s ease;position:absolute;left:0;top:0;}
+.ytd-progress-oct{height:100%;background:rgba(201,162,75,.5);border-radius:3px;transition:width .5s ease;position:absolute;left:0;top:0;}
+.ytd-progress-labels{display:flex;gap:16px;margin-top:5px;font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--dim);}
+.ytd-right{flex-shrink:0;padding-left:24px;border-left:1px solid var(--border);margin-left:0;}
+.curr-switcher{display:flex;gap:6px;margin-bottom:10px;}
+.curr-pill{background:transparent;border:1px solid var(--border);color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:5px 14px;border-radius:20px;cursor:pointer;transition:all .15s;}
+.curr-pill:hover{border-color:var(--gold);color:var(--gold);}
+.curr-pill.on{background:var(--gold-dim);border-color:var(--gold);color:var(--gold);}
+.fx-rates{font-size:10px;color:var(--faint);font-family:'IBM Plex Mono',monospace;line-height:1.8;}
+
+/* ── CURRENCY TAB ──────────────────────────────────────────────────────── */
+.fx-header{margin-bottom:20px;}
+.fx-rate-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+.fx-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px 18px;}
+.fx-pair-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--faint);margin-bottom:6px;letter-spacing:.05em;}
+.fx-pair-val{display:flex;align-items:center;gap:8px;font-size:14px;font-family:'IBM Plex Mono',monospace;margin-bottom:4px;}
+.fx-rate-input{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:18px;padding:4px 8px;border-radius:5px;width:90px;outline:none;}
+.fx-rate-input:focus{border-color:var(--gold);}
+.fx-pair-sub{font-size:10px;color:var(--faint);}
+.fx-widget{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:18px 20px;}
+.fx-widget-title{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:var(--faint);margin-bottom:14px;text-transform:uppercase;}
+.fx-convert-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.fx-convert-input{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'Newsreader',serif;font-size:24px;padding:8px 12px;border-radius:6px;width:180px;outline:none;}
+.fx-convert-input:focus{border-color:var(--gold);}
+.fx-convert-sel{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:14px;padding:8px 10px;border-radius:6px;cursor:pointer;}
+.fx-arrow{font-size:20px;color:var(--dim);}
+.fx-result-col{display:flex;flex-direction:column;gap:6px;}
+.fx-result-row{display:flex;align-items:baseline;gap:10px;}
+.fx-result-lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint);min-width:28px;}
+.fx-result-val{font-family:'Newsreader',serif;font-size:20px;color:var(--text);}
+.fx-table{width:100%;border-collapse:collapse;}
+.fx-table th{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;color:var(--faint);padding:6px 10px;text-align:right;border-bottom:1px solid var(--border);}
+.fx-table th:first-child{text-align:left;}
+.fx-table td{padding:7px 10px;font-family:'IBM Plex Mono',monospace;font-size:12px;border-bottom:1px solid rgba(255,255,255,.04);text-align:right;}
+.fx-table td:first-child{text-align:left;color:var(--dim);}
+.fx-table tr:last-child td{border-bottom:none;font-weight:600;color:var(--text);}
+
+/* ── COLLECTION STATUS ─────────────────────────────────────────────────── */
+.cell-received{background:rgba(74,222,128,.08);}
+.cell-deferred{background:rgba(251,191,36,.07);}
+.status-badge{display:inline-block;font-size:9px;font-family:'IBM Plex Mono',monospace;letter-spacing:.04em;padding:1px 5px;border-radius:3px;margin-left:6px;vertical-align:middle;}
+.status-badge.recv{background:rgba(74,222,128,.18);color:#4ade80;border:1px solid rgba(74,222,128,.3);}
+.status-badge.def{background:rgba(251,191,36,.18);color:#fbbf24;border:1px solid rgba(251,191,36,.3);}
+.deferred-orig{text-decoration:line-through;color:var(--dim);font-size:.9em;}
+.deferred-to{font-size:10px;color:#fbbf24;display:block;margin-top:1px;}
+
+/* ── SCARD ACTUAL / PROGRESS ───────────────────────────────────────────── */
+.scard-actual{font-size:11px;color:#4ade80;margin-top:3px;font-family:'IBM Plex Mono',monospace;}
+.scard-projected{font-size:10px;color:var(--dim);margin-top:1px;}
+.scard-progress{height:3px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:6px;overflow:hidden;}
+.scard-progress-fill{height:100%;border-radius:2px;transition:width .4s ease;}
+
+/* ── STATUS COLUMN ─────────────────────────────────────────────────────── */
+td.status-col{padding:4px 8px;white-space:nowrap;}
+.status-col-inner{display:flex;align-items:center;gap:4px;flex-wrap:nowrap;}
+.status-col-lbl{font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--faint);min-width:22px;letter-spacing:.03em;}
+.status-pill-wrap{display:inline-flex;gap:3px;}
+
+/* ── STATUS MARK BUTTONS ───────────────────────────────────────────────── */
+.sbtn{font-size:11px;font-family:'IBM Plex Mono',monospace;padding:3px 7px;border-radius:4px;border:1px solid;cursor:pointer;background:transparent;transition:all .15s;line-height:1;}
+.sbtn-recv{color:rgba(74,222,128,.5);border-color:rgba(74,222,128,.2);}
+.sbtn-recv:hover{color:#4ade80;border-color:rgba(74,222,128,.5);background:rgba(74,222,128,.12);}
+.sbtn-recv.active{color:#4ade80;border-color:rgba(74,222,128,.6);background:rgba(74,222,128,.2);}
+.sbtn-defer{color:rgba(251,191,36,.5);border-color:rgba(251,191,36,.2);}
+.sbtn-defer:hover{color:#fbbf24;border-color:rgba(251,191,36,.5);background:rgba(251,191,36,.12);}
+.sbtn-defer.active{color:#fbbf24;border-color:rgba(251,191,36,.6);background:rgba(251,191,36,.2);}
+.sbtn-reset{color:var(--dim);border-color:rgba(255,255,255,.12);}
+.sbtn-reset:hover{background:rgba(255,255,255,.07);color:var(--fg);}
+.col-edit-bar .sbtn-group{display:flex;gap:4px;margin-left:12px;align-items:center;}
+.col-edit-bar .sbtn-sep{width:1px;background:rgba(255,255,255,.1);height:20px;margin:0 4px;}
+
+/* ── AUDIT PANEL ───────────────────────────────────────────────────────── */
+#auditOverlay{display:none;position:fixed;inset:0;z-index:1200;}
+#auditOverlay.show{display:block;}
+.audit-panel{position:fixed;right:-400px;top:0;bottom:0;width:360px;background:#1a1a2e;border-left:1px solid rgba(255,255,255,.1);z-index:1201;transition:right .28s ease;overflow:hidden;display:flex;flex-direction:column;}
+.audit-panel.show{right:0;}
+.audit-panel-head{padding:16px 18px 12px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0;}
+.audit-panel-title{font-family:'Newsreader',serif;font-size:16px;font-weight:500;}
+.audit-panel-sub{font-size:11px;color:var(--dim);margin-top:2px;}
+.audit-close{background:none;border:none;color:var(--dim);font-size:18px;cursor:pointer;padding:0;line-height:1;}
+.audit-close:hover{color:var(--fg);}
+.audit-list{flex:1;overflow-y:auto;padding:12px 18px;}
+.audit-entry{padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);display:grid;grid-template-columns:auto 1fr auto;gap:6px 10px;align-items:start;}
+.audit-entry:last-child{border-bottom:none;}
+.audit-dot{width:7px;height:7px;border-radius:50%;margin-top:5px;flex-shrink:0;}
+.audit-type-received .audit-dot{background:#4ade80;}
+.audit-type-defer .audit-dot{background:#fbbf24;}
+.audit-type-edit .audit-dot{background:#60a5fa;}
+.audit-type-remove .audit-dot{background:#f87171;}
+.audit-type-convert .audit-dot{background:#a78bfa;}
+.audit-type-add .audit-dot{background:#34d399;}
+.audit-entry-name{font-size:12px;font-weight:600;color:var(--fg);}
+.audit-entry-desc{font-size:11px;color:var(--dim);margin-top:1px;}
+.audit-entry-time{font-size:10px;color:var(--faint);font-family:'IBM Plex Mono',monospace;white-space:nowrap;}
+.audit-empty{text-align:center;padding:40px 0;color:var(--faint);font-size:12px;}
+
+/* ── GLOBAL AUDIT BUTTON ───────────────────────────────────────────────── */
+.audit-global-btn{position:fixed;bottom:24px;right:24px;background:#1a1a2e;border:1px solid rgba(255,255,255,.15);color:var(--fg);font-size:12px;padding:8px 14px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:7px;z-index:900;box-shadow:0 4px 14px rgba(0,0,0,.4);transition:border-color .15s;}
+.audit-global-btn:hover{border-color:rgba(255,255,255,.3);}
+.audit-count{background:rgba(99,102,241,.8);color:#fff;font-size:10px;font-family:'IBM Plex Mono',monospace;padding:1px 6px;border-radius:10px;min-width:18px;text-align:center;display:none;}
+.audit-count.has{display:inline-block;}
+
+/* ── AUDIT ICON ON NAME CELL ───────────────────────────────────────────── */
+td.name-cell{position:relative;}
+.audit-icon{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:16px;height:16px;border-radius:50%;background:rgba(99,102,241,.25);border:1px solid rgba(99,102,241,.5);display:flex;align-items:center;justify-content:center;font-size:8px;cursor:pointer;opacity:0;transition:opacity .15s;}
+tr:hover .audit-icon{opacity:1;}
+.audit-icon.has-trail{opacity:.7;}
+.audit-icon.has-trail:hover{opacity:1;}
+
+/* ── DANGER ACTIONS ────────────────────────────────────────────────────── */
+.danger-zone{margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,.07);}
+.danger-label{font-size:10px;font-family:'IBM Plex Mono',monospace;letter-spacing:.06em;color:var(--faint);margin-bottom:8px;}
+.danger-btn{width:100%;padding:8px;border-radius:6px;border:1px solid rgba(248,113,113,.25);background:transparent;color:#f87171;font-size:12px;cursor:pointer;transition:all .15s;text-align:left;}
+.danger-btn:hover{background:rgba(248,113,113,.12);}
+.danger-btn.confirming{background:rgba(248,113,113,.2);border-color:rgba(248,113,113,.5);}
+
+/* ── LOCK BAR ─────────────────────────────────────────────────────────────── */
+#lock-bar{position:sticky;top:0;z-index:999;display:flex;align-items:center;gap:12px;padding:9px 18px;background:#0d1017;border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:12px;}
+#lock-bar.unlocked{background:#0f1f12;border-bottom-color:#2d5a35;}
+.lock-icon{font-size:15px;line-height:1;}
+.lock-status{color:var(--dim);flex:1;}
+#lock-bar.unlocked .lock-status{color:#5a9b6e;}
+.lock-input-wrap{display:flex;gap:6px;align-items:center;}
+#lock-pin-input{background:#1a1f27;border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px;padding:5px 10px;border-radius:5px;width:90px;letter-spacing:.2em;text-align:center;}
+#lock-pin-input:focus{outline:none;border-color:var(--gold);}
+.lock-btn{background:var(--panel2);border:1px solid var(--border);color:var(--dim);font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:500;padding:5px 12px;border-radius:5px;cursor:pointer;transition:all .15s;}
+.lock-btn:hover{color:var(--text);border-color:var(--gold);}
+#lock-bar.unlocked .lock-btn{color:#5a9b6e;border-color:#2d5a35;}
+.lock-sep{color:var(--faint);margin:0 4px;}
+.lock-last-edit{color:var(--faint);font-size:11px;}
+
+/* ── TEAM VIEWER BAR ───────────────────────────────────────────────────────── */
+#team-bar{display:flex;align-items:center;gap:10px;padding:8px 18px;background:var(--panel);border-bottom:1px solid var(--border);font-size:12px;flex-wrap:wrap;}
+.team-bar-label{color:var(--faint);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;margin-right:4px;}
+.viewer-pill{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--border);border-radius:20px;padding:4px 10px 4px 6px;font-size:12px;cursor:default;}
+.viewer-dot{width:7px;height:7px;border-radius:50%;background:var(--faint);}
+.viewer-pill.you .viewer-dot{background:#5a9b6e;box-shadow:0 0 5px #5a9b6e88;}
+.viewer-pill.you{border-color:#2d5a35;}
+#viewer-name-input{background:var(--panel2);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:12px;padding:4px 8px;border-radius:5px;width:130px;}
+#viewer-name-input:focus{outline:none;border-color:var(--gold);}
+.team-bar-right{margin-left:auto;display:flex;gap:12px;align-items:center;}
+.last-updated{color:var(--faint);font-size:11px;font-family:'IBM Plex Mono',monospace;}
+
+/* ── LOCKED OVERLAY ─────────────────────────────────────────────────────────── */
+body.is-locked .sbtn, body.is-locked .col-edit-bar, body.is-locked button.danger-btn,
+body.is-locked .pipe-edit-bar, body.is-locked .ytd-save-btn, body.is-locked .ytd-input,
+body.is-locked [data-editable]{pointer-events:none;opacity:.45;}
+body.is-locked .col-row{cursor:default;}
+</style>
+</head>
+<body>
+
+<!-- LOCK BAR -->
+<div id="lock-bar" class="">
+  <span class="lock-icon" id="lock-icon">🔒</span>
+  <span class="lock-status" id="lock-status">View only — enter code to edit</span>
+  <div class="lock-input-wrap">
+    <input type="password" id="lock-pin-input" maxlength="4" placeholder="····" autocomplete="off"
+      onkeydown="if(event.key==='Enter')toggleLock()" />
+    <button class="lock-btn" onclick="toggleLock()" id="lock-btn">Unlock</button>
+  </div>
+  <span class="lock-sep">|</span>
+  <span class="lock-last-edit" id="lock-last-edit"></span>
+</div>
+
+<!-- TEAM VIEWER BAR -->
+<div id="team-bar">
+  <span class="team-bar-label">VIEWING NOW</span>
+  <div class="viewer-pill you" id="my-viewer-pill">
+    <span class="viewer-dot"></span>
+    <span id="my-viewer-name">You</span>
+  </div>
+  <div id="team-viewers-list"></div>
+  <div style="display:flex;align-items:center;gap:6px;margin-left:4px;">
+    <input type="text" id="viewer-name-input" placeholder="Your name…" maxlength="20"
+      onchange="setViewerName(this.value)" onblur="setViewerName(this.value)" />
+  </div>
+  <div class="team-bar-right">
+    <span class="last-updated" id="last-updated-lbl"></span>
+    <button class="lock-btn" onclick="copyShareLink()" title="Copy link to clipboard">🔗 Copy link</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- YEAR TARGET BANNER -->
+<div class="ytd-banner">
+  <div class="ytd-left">
+    <div class="ytd-block">
+      <div class="ytd-label">YEAR TARGET</div>
+      <div class="ytd-val" id="ytd-target">AED 2,500,000</div>
+      <div class="ytd-edit-row">
+        <input class="ytd-input" id="ytd-target-input" type="number" placeholder="Enter target in AED" value="2500000" onclick="event.stopPropagation()" />
+        <button class="ytd-save-btn" onclick="saveYtdTarget()">Set</button>
+      </div>
+    </div>
+    <div class="ytd-divider"></div>
+    <div class="ytd-block">
+      <div class="ytd-label">COLLECTED YTD <span style="font-size:9px;color:var(--faint)">(through Oct + any Nov/Dec received)</span></div>
+      <div class="ytd-val green" id="ytd-collected">AED 1,078,850</div>
+      <div class="ytd-sub" id="ytd-collected-sub"></div>
+    </div>
+    <div class="ytd-divider"></div>
+    <div class="ytd-block">
+      <div class="ytd-label">REMAINING</div>
+      <div class="ytd-val amber" id="ytd-remaining"></div>
+      <div class="ytd-sub" id="ytd-pct"></div>
+    </div>
+    <div class="ytd-progress-wrap">
+      <div class="ytd-progress-track">
+        <div class="ytd-progress-fill" id="ytd-bar"></div>
+        <div class="ytd-progress-oct" id="ytd-bar-oct"></div>
+      </div>
+      <div class="ytd-progress-labels">
+        <span style="color:#4ade80">■ Collected</span>
+        <span style="color:var(--gold)">■ Q4 projected</span>
+      </div>
+    </div>
+  </div>
+  <div class="ytd-right">
+    <div class="ytd-label" style="margin-bottom:8px;">DISPLAY CURRENCY</div>
+    <div class="curr-switcher">
+      <button class="curr-pill on" data-c="CAD" onclick="setCurrency('CAD')">CA$</button>
+      <button class="curr-pill" data-c="USD" onclick="setCurrency('USD')">US$</button>
+      <button class="curr-pill" data-c="AED" onclick="setCurrency('AED')">AED</button>
+    </div>
+    <div class="fx-rates" id="fx-rates-display"></div>
+  </div>
+</div>
+
+<header>
+  <div>
+    <p class="brand-eyebrow">FOCUS SOFTNET · USA1 REGION</p>
+    <h1>Q4 2026 <em>Revenue Dashboard</em></h1>
+  </div>
+  <div class="hstats">
+    <div class="hs"><span class="num" id="hCollections">$353,250</span><span class="lbl">Q4 collections</span></div>
+    <div class="hs"><span class="num" id="hPipeline">$479,967</span><span class="lbl">pipeline value</span></div>
+    <div class="hs"><span class="num" id="hCombined">$833,217</span><span class="lbl">combined Q4</span></div>
+  </div>
+</header>
+
+<div class="tabbar">
+  <button class="tabbtn active" data-tab="overview">Overview</button>
+  <button class="tabbtn" data-tab="collections">Collections</button>
+  <button class="tabbtn" data-tab="pipeline">Pipeline</button>
+  <button class="tabbtn" data-tab="fx">Currency</button>
+</div>
+
+<!-- OVERVIEW -->
+<section class="view active" id="view-overview">
+
+  <div class="summary-band">
+    <div class="scard oct clickable selected" id="card-oct" onclick="toggleDrill('oct')">
+      <div class="scard-label">OCTOBER</div>
+      <div class="scard-val" id="s-oct">$90,900</div>
+      <div class="scard-sub">collections</div>
+    </div>
+    <div class="scard nov clickable" id="card-nov" onclick="toggleDrill('nov')">
+      <div class="scard-label">NOVEMBER</div>
+      <div class="scard-val" id="s-nov">$102,590</div>
+      <div class="scard-sub">collections</div>
+    </div>
+    <div class="scard dec clickable" id="card-dec" onclick="toggleDrill('dec')">
+      <div class="scard-label">DECEMBER</div>
+      <div class="scard-val" id="s-dec">$159,760</div>
+      <div class="scard-sub">collections</div>
+    </div>
+    <div class="scard total">
+      <div class="scard-label">TOTAL COLLECTIONS</div>
+      <div class="scard-val" id="s-total">$353,250</div>
+      <div class="scard-sub" id="s-total-sub">18 active customers</div>
+    </div>
+    <div class="scard pipeline">
+      <div class="scard-label">PIPELINE VALUE</div>
+      <div class="scard-val" id="s-pipeline">$479,967</div>
+      <div class="scard-sub" id="s-pipeline-sub">29 opportunities</div>
+    </div>
+    <div class="scard combined">
+      <div class="scard-label">COMBINED Q4</div>
+      <div class="scard-val" id="s-combined">$833,217</div>
+      <div class="scard-sub">collections + pipeline</div>
+    </div>
+  </div>
+
+  <!-- MONTH DRILL DOWN -->
+  <div class="month-drill show" id="drill-panel">
+    <div class="drill-header">
+      <div class="drill-title" id="drill-title">October Breakdown</div>
+      <button class="drill-close" onclick="closeDrill()">✕</button>
+    </div>
+    <table class="drill-table">
+      <thead><tr><th>Account</th><th>Type</th><th class="r">Amount</th><th class="r">Currency</th></tr></thead>
+      <tbody id="drill-body"><tr><td class="name">Food Pak Express</td><td><span class="type-pill customer">Customer</span></td><td class="mono m-oct highlight">$25,000</td><td><span class="curr-tag">CAD</span></td></tr><tr><td class="name">HWTG</td><td><span class="type-pill customer">Customer</span></td><td class="mono m-oct highlight">$20,000</td><td><span class="curr-tag">CAD</span></td></tr><tr><td class="name">Wes Tech Irrigation</td><td><span class="type-pill customer">Customer</span></td><td class="mono m-oct highlight">$18,500</td><td><span class="curr-tag">CAD</span></td></tr><tr><td class="name">Ocean Crisp Apples</td><td><span class="type-pill customer">Customer</span></td><td class="mono m-oct highlight">$10,000</td><td><span class="curr-tag">CAD</span></td></tr><tr><td class="name">Artisan West</td><td><span class="type-pill customer">Customer</span></td><td class="mono m-oct highlight">$2,500</td><td><span class="curr-tag">CAD</span></td></tr><tr><td class="name">National Warehousing</td><td><span class="type-pill customer">Customer</span></td><td class="mono m-oct highlight">$2,500</td><td><span class="curr-tag">CAD</span></td></tr><tr><td class="name">Demand Planners</td><td><span class="type-pill customer">Customer</span></td><td class="mono m-oct highlight">$2,400</td><td><span class="curr-tag">CAD</span></td></tr><tr><td class="name">Allied International</td><td><span class="type-pill opportunity">Opportunity</span></td><td class="mono highlight">$17,628</td><td><span class="curr-tag">USD</span></td></tr><tr><td class="name">Blue Heron Battery</td><td><span class="type-pill opportunity">Opportunity</span></td><td class="mono highlight">$12,430</td><td><span class="curr-tag">USD</span></td></tr><tr><td class="name">Westech Irrigation</td><td><span class="type-pill opportunity">Opportunity</span></td><td class="mono highlight">$36,467</td><td><span class="curr-tag">CAD</span></td></tr><tr><td class="name">Durham Community Health</td><td><span class="type-pill opportunity">Opportunity</span></td><td class="mono highlight">$27,816</td><td><span class="curr-tag">CAD</span></td></tr><tr><td class="name">Frosty Hollow Lodging</td><td><span class="type-pill opportunity">Opportunity</span></td><td class="mono highlight">$6,441</td><td><span class="curr-tag">USD</span></td></tr><tr><td class="name">Port Credit Village Pharmacy</td><td><span class="type-pill opportunity">Opportunity</span></td><td class="mono highlight">$20,679</td><td><span class="curr-tag">CAD</span></td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- ALL ACCOUNTS SNAPSHOT -->
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-title">ALL ACCOUNTS — Q4 SNAPSHOT</div>
+      <div class="panel-actions">
+        <button class="btn primary" onclick="openAddModal()">+ Add Prospect</button>
+        <button class="btn export" onclick="exportCSV()">↓ Export CSV</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Account</th>
+            <th>Type</th>
+            <th class="r">Oct</th>
+            <th class="r">Nov</th>
+            <th class="r">Dec</th>
+            <th class="r">Q4 Total</th>
+            <th>Status</th>
+            <th>Upsell</th>
+          </tr>
+        </thead>
+        <tbody id="overview-body"><tr>
+      <td class="name">SOTG</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov">$51,870</td>
+      <td class="mono m-dec">$20,000</td>
+      <td class="mono highlight">$71,870</td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">OIC</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov">$10,000</td>
+      <td class="mono m-dec">$55,000</td>
+      <td class="mono highlight">$65,000</td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Globe Metal</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov">$13,500</td>
+      <td class="mono m-dec">$32,460</td>
+      <td class="mono highlight">$45,960</td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Food Pak Express</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct">$35,000</td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono highlight">$35,000</td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Wes Tech Irrigation</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct">$18,500</td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec">$6,500</td>
+      <td class="mono highlight">$25,000</td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Delta</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec">$22,000</td>
+      <td class="mono highlight">$22,000</td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">HWTG</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct">$20,000</td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono highlight">$20,000</td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Matrix USA</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov">$15,000</td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono highlight">$15,000</td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Kwality</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec">$12,000</td>
+      <td class="mono highlight">$12,000</td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Ocean Crisp Apples</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct">$10,000</td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono highlight">$10,000</td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Atlantic Autocold</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec">$7,800</td>
+      <td class="mono highlight">$7,800</td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Tamisha</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov">$2,500</td>
+      <td class="mono m-dec">$2,500</td>
+      <td class="mono highlight">$5,000</td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Glen Briar</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov">$4,500</td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono highlight">$4,500</td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Celltech</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov">$3,720</td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono highlight">$3,720</td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">AS Brothers</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov">$1,500</td>
+      <td class="mono m-dec">$1,500</td>
+      <td class="mono highlight">$3,000</td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Artisan West</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct">$2,500</td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono highlight">$2,500</td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">National Warehousing</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct">$2,500</td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono highlight">$2,500</td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Demand Planners</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct">$2,400</td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono highlight">$2,400</td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Cosmos</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono "><span class="zero">—</span></td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Cutting Edge</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono "><span class="zero">—</span></td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">HOBC</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono "><span class="zero">—</span></td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">JP Doumak</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono "><span class="zero">—</span></td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Lifta</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono "><span class="zero">—</span></td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Matrix Canada</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono "><span class="zero">—</span></td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Peterbrown</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono "><span class="zero">—</span></td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="upsell-tag">↑ $1,000</span></td>
+    </tr><tr>
+      <td class="name">Rajdhani</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono "><span class="zero">—</span></td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Schmuve</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono "><span class="zero">—</span></td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="upsell-tag">↑ $5,000</span></td>
+    </tr><tr>
+      <td class="name">Seel LLC</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono "><span class="zero">—</span></td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="upsell-tag">↑ $1,000</span></td>
+    </tr><tr>
+      <td class="name">SofabyFancy</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono "><span class="zero">—</span></td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="upsell-tag">↑ $5,000</span></td>
+    </tr><tr>
+      <td class="name">TWC</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono "><span class="zero">—</span></td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td><span class="upsell-tag">↑ $5,000</span></td>
+    </tr><tr>
+      <td class="name">Westech Irrigation</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span style="color:var(--dim)">CAD</span> $36,467</td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">CAD</span> $36,467</td>
+      <td><span class="temp-badge Hot" onclick="event.stopPropagation();cyclePipe(event,'Westech Irrigation')"><span class="dot"></span>Hot</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Durham Community Health</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span style="color:var(--dim)">CAD</span> $27,816</td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">CAD</span> $27,816</td>
+      <td><span class="temp-badge Hot" onclick="event.stopPropagation();cyclePipe(event,'Durham Community Health')"><span class="dot"></span>Hot</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Port Credit Village Pharmacy</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span style="color:var(--dim)">CAD</span> $20,679</td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">CAD</span> $20,679</td>
+      <td><span class="temp-badge Hot" onclick="event.stopPropagation();cyclePipe(event,'Port Credit Village Pharmacy')"><span class="dot"></span>Hot</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Allied International</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span style="color:var(--dim)">USD</span> $17,628</td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">USD</span> $17,628</td>
+      <td><span class="temp-badge Hot" onclick="event.stopPropagation();cyclePipe(event,'Allied International')"><span class="dot"></span>Hot</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Frosty Hollow Lodging</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span style="color:var(--dim)">USD</span> $6,441</td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">USD</span> $6,441</td>
+      <td><span class="temp-badge Hot" onclick="event.stopPropagation();cyclePipe(event,'Frosty Hollow Lodging')"><span class="dot"></span>Hot</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Federal Pipe &amp; Supply</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span style="color:var(--dim)">USD</span> $47,799</td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">USD</span> $47,799</td>
+      <td><span class="temp-badge Warm" onclick="event.stopPropagation();cyclePipe(event,'Federal Pipe &amp; Supply')"><span class="dot"></span>Warm</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Season Fresh Trading</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span style="color:var(--dim)">CAD</span> $24,984</td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">CAD</span> $24,984</td>
+      <td><span class="temp-badge Warm" onclick="event.stopPropagation();cyclePipe(event,'Season Fresh Trading')"><span class="dot"></span>Warm</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Indcan Imports</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span style="color:var(--dim)">CAD</span> $15,368</td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">CAD</span> $15,368</td>
+      <td><span class="temp-badge Warm" onclick="event.stopPropagation();cyclePipe(event,'Indcan Imports')"><span class="dot"></span>Warm</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Leather Living Furniture</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span style="color:var(--dim)">CAD</span> $14,916</td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">CAD</span> $14,916</td>
+      <td><span class="temp-badge Warm" onclick="event.stopPropagation();cyclePipe(event,'Leather Living Furniture')"><span class="dot"></span>Warm</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">TGG Mastronardi</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span style="color:var(--dim)">CAD</span> $13,786</td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">CAD</span> $13,786</td>
+      <td><span class="temp-badge Warm" onclick="event.stopPropagation();cyclePipe(event,'TGG Mastronardi')"><span class="dot"></span>Warm</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Africa Trade Desk</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span style="color:var(--dim)">CAD</span> $12,769</td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">CAD</span> $12,769</td>
+      <td><span class="temp-badge Warm" onclick="event.stopPropagation();cyclePipe(event,'Africa Trade Desk')"><span class="dot"></span>Warm</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Mariano Brothers</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span style="color:var(--dim)">USD</span> $10,800</td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">USD</span> $10,800</td>
+      <td><span class="temp-badge Warm" onclick="event.stopPropagation();cyclePipe(event,'Mariano Brothers')"><span class="dot"></span>Warm</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Macarona Produce</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span style="color:var(--dim)">USD</span> $9,424</td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">USD</span> $9,424</td>
+      <td><span class="temp-badge Warm" onclick="event.stopPropagation();cyclePipe(event,'Macarona Produce')"><span class="dot"></span>Warm</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Riz Brands MRP</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span style="color:var(--dim)">CAD</span> $30,329</td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">CAD</span> $30,329</td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Riz Brands MRP')"><span class="dot"></span>Cold</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Al Shamas Food Products</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span style="color:var(--dim)">CAD</span> $18,080</td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">CAD</span> $18,080</td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Al Shamas Food Products')"><span class="dot"></span>Cold</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Donald J Ross Enterprises</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span style="color:var(--dim)">CAD</span> $18,080</td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">CAD</span> $18,080</td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Donald J Ross Enterprises')"><span class="dot"></span>Cold</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Grand River Freight</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span style="color:var(--dim)">CAD</span> $18,080</td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">CAD</span> $18,080</td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Grand River Freight')"><span class="dot"></span>Cold</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Switch Business Systems</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span style="color:var(--dim)">USD</span> $16,950</td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">USD</span> $16,950</td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Switch Business Systems')"><span class="dot"></span>Cold</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Quantiam</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span style="color:var(--dim)">CAD</span> $16,800</td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">CAD</span> $16,800</td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Quantiam')"><span class="dot"></span>Cold</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">H D Edwards</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span style="color:var(--dim)">USD</span> $14,939</td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">USD</span> $14,939</td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'H D Edwards')"><span class="dot"></span>Cold</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">United Beauty</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span style="color:var(--dim)">CAD</span> $13,560</td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">CAD</span> $13,560</td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'United Beauty')"><span class="dot"></span>Cold</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Cotton Funeral Service</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span style="color:var(--dim)">USD</span> $13,334</td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">USD</span> $13,334</td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Cotton Funeral Service')"><span class="dot"></span>Cold</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Blue Heron Battery</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span style="color:var(--dim)">USD</span> $12,430</td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span class="zero">—</span></td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">USD</span> $12,430</td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Blue Heron Battery')"><span class="dot"></span>Cold</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Cranetech</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span style="color:var(--dim)">USD</span> $12,204</td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">USD</span> $12,204</td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Cranetech')"><span class="dot"></span>Cold</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Kings Cash &amp; Carry</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span style="color:var(--dim)">USD</span> $11,752</td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">USD</span> $11,752</td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Kings Cash &amp; Carry')"><span class="dot"></span>Cold</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Kustom Power Solutions</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span style="color:var(--dim)">CAD</span> $11,526</td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">CAD</span> $11,526</td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Kustom Power Solutions')"><span class="dot"></span>Cold</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Distribution ISM</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span style="color:var(--dim)">CAD</span> $7,014</td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">CAD</span> $7,014</td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Distribution ISM')"><span class="dot"></span>Cold</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">New Granite &amp; Marble</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span style="color:var(--dim)">USD</span> $4,407</td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">USD</span> $4,407</td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'New Granite &amp; Marble')"><span class="dot"></span>Cold</span></td>
+      <td><span class="zero">—</span></td>
+    </tr><tr>
+      <td class="name">Coldwell Banker Premier</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct"><span class="zero">—</span></td>
+      <td class="mono m-nov"><span class="zero">—</span></td>
+      <td class="mono m-dec"><span style="color:var(--dim)">USD</span> $1,605</td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">USD</span> $1,605</td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Coldwell Banker Premier')"><span class="dot"></span>Cold</span></td>
+      <td><span class="zero">—</span></td>
+    </tr></tbody>
+        <tfoot><tr class="total-row" id="overview-total">
+    <td colspan="2">Total</td>
+    <td class="mono m-oct">$90,900</td>
+    <td class="mono m-nov">$102,590</td>
+    <td class="mono m-dec">$159,760</td>
+    <td class="mono highlight">$833,217</td>
+    <td colspan="2"></td>
+  </tr></tfoot>
+      </table>
+    </div>
+  </div>
+
+</section>
+
+<!-- COLLECTIONS -->
+<section class="view" id="view-collections">
+  <div class="summary-band" style="grid-template-columns:repeat(4,1fr)">
+    <div class="scard oct clickable" id="card-oct-c" onclick="toggleDrill('oct','col')">
+      <div class="scard-label">OCTOBER</div>
+      <div class="scard-val" id="sc-oct">$90,900</div>
+      <div class="scard-sub" id="sc-oct-n"></div>
+      <div class="scard-actual" id="sc-oct-recv" style="display:none"></div>
+      <div class="scard-projected" id="sc-oct-proj"></div>
+      <div class="scard-progress"><div class="scard-progress-fill" id="sc-oct-bar" style="width:0%;background:var(--oct)"></div></div>
+    </div>
+    <div class="scard nov clickable" id="card-nov-c" onclick="toggleDrill('nov','col')">
+      <div class="scard-label">NOVEMBER</div>
+      <div class="scard-val" id="sc-nov">$102,590</div>
+      <div class="scard-sub" id="sc-nov-n"></div>
+      <div class="scard-actual" id="sc-nov-recv" style="display:none"></div>
+      <div class="scard-projected" id="sc-nov-proj"></div>
+      <div class="scard-progress"><div class="scard-progress-fill" id="sc-nov-bar" style="width:0%;background:var(--nov)"></div></div>
+    </div>
+    <div class="scard dec clickable" id="card-dec-c" onclick="toggleDrill('dec','col')">
+      <div class="scard-label">DECEMBER</div>
+      <div class="scard-val" id="sc-dec">$159,760</div>
+      <div class="scard-sub" id="sc-dec-n"></div>
+      <div class="scard-actual" id="sc-dec-recv" style="display:none"></div>
+      <div class="scard-projected" id="sc-dec-proj"></div>
+      <div class="scard-progress"><div class="scard-progress-fill" id="sc-dec-bar" style="width:0%;background:var(--dec)"></div></div>
+    </div>
+    <div class="scard total">
+      <div class="scard-label">Q4 TOTAL</div>
+      <div class="scard-val" id="sc-total">$353,250</div>
+      <div class="scard-sub" id="sc-total-n"></div>
+      <div class="scard-actual" id="sc-total-recv" style="display:none"></div>
+      <div class="scard-projected" id="sc-total-proj"></div>
+      <div class="scard-progress"><div class="scard-progress-fill" id="sc-total-bar" style="width:0%;background:var(--gold)"></div></div>
+    </div>
+  </div>
+  <div class="scard" id="sc-q1-card" style="display:none;margin-bottom:10px;border-color:rgba(201,162,75,.4);">
+    <div class="scard-label">Q1 2027 SPILLOVER</div>
+    <div class="scard-val" id="sc-q1" style="color:var(--gold)"></div>
+    <div class="scard-sub" id="sc-q1-n" style="color:var(--dim)"></div>
+  </div>
+  <div class="month-drill" id="drill-panel-col">
+    <div class="drill-header">
+      <div class="drill-title" id="drill-title-col">October</div>
+      <button class="drill-close" onclick="closeDrill('col')">✕</button>
+    </div>
+    <table class="drill-table">
+      <thead><tr><th>Account</th><th class="r">Amount (CAD)</th><th>Upsell Opp.</th></tr></thead>
+      <tbody id="drill-body-col"></tbody>
+    </table>
+  </div>
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-title">CUSTOMER COLLECTIONS — Q4 2026</div>
+      <div class="panel-actions">
+        <button class="btn export" onclick="exportCSV('col')">↓ Export</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Account</th>
+            <th class="r">October</th>
+            <th class="r">November</th>
+            <th class="r">December</th>
+            <th class="r">Q4 Total</th>
+            <th>Mark Status</th>
+            <th>Upsell</th>
+          </tr>
+        </thead>
+        <tfoot><tr id="col-total"></tr></tfoot>
+        <tbody id="col-body"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- CURRENCY CONVERTER TAB -->
+<section class="view" id="view-fx">
+  <div style="max-width:700px;margin:0 auto;padding-top:12px;">
+    <div class="fx-header">
+      <div style="font-family:'Newsreader',serif;font-size:22px;font-weight:500;margin-bottom:4px;">Currency Converter</div>
+      <div style="font-size:12px;color:var(--dim);">Rates as of Nov 9, 2026 · Mid-market · Editable</div>
+    </div>
+
+    <!-- Rate cards -->
+    <div class="fx-rate-grid">
+      <div class="fx-card">
+        <div class="fx-pair-label">1 USD =</div>
+        <div class="fx-pair-val"><input class="fx-rate-input" id="rate-usd-cad" type="number" step="0.001" value="1.412" onchange="updateRates()" /> CAD</div>
+        <div class="fx-pair-sub">US Dollar → Canadian Dollar</div>
+      </div>
+      <div class="fx-card">
+        <div class="fx-pair-label">1 CAD =</div>
+        <div class="fx-pair-val"><input class="fx-rate-input" id="rate-cad-aed" type="number" step="0.001" value="2.619" onchange="updateRates()" /> AED</div>
+        <div class="fx-pair-sub">Canadian Dollar → UAE Dirham</div>
+      </div>
+      <div class="fx-card">
+        <div class="fx-pair-label">1 USD =</div>
+        <div class="fx-pair-val" id="rate-usd-aed-display" style="font-family:'Newsreader',serif;font-size:22px;color:var(--gold);">3.674 AED</div>
+        <div class="fx-pair-sub">Derived: USD × CAD rate × AED rate</div>
+      </div>
+    </div>
+
+    <!-- Converter widget -->
+    <div class="fx-widget">
+      <div class="fx-widget-title">Quick Convert</div>
+      <div class="fx-convert-row">
+        <input class="fx-convert-input" id="fx-amount" type="number" value="100000" oninput="calcFx()" />
+        <select class="fx-convert-sel" id="fx-from" onchange="calcFx()">
+          <option value="CAD">CAD</option>
+          <option value="USD">USD</option>
+          <option value="AED">AED</option>
+        </select>
+        <span class="fx-arrow">→</span>
+        <div class="fx-result-col">
+          <div class="fx-result-row"><span class="fx-result-lbl">CAD</span><span class="fx-result-val" id="fx-out-cad"></span></div>
+          <div class="fx-result-row"><span class="fx-result-lbl">USD</span><span class="fx-result-val" id="fx-out-usd"></span></div>
+          <div class="fx-result-row"><span class="fx-result-lbl">AED</span><span class="fx-result-val" id="fx-out-aed"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Revenue in all currencies -->
+    <div class="fx-widget" style="margin-top:16px;">
+      <div class="fx-widget-title">Q4 2026 Revenue · All Currencies</div>
+      <table class="fx-table">
+        <thead><tr><th></th><th>CAD</th><th>USD</th><th>AED</th></tr></thead>
+        <tbody id="fx-rev-body"></tbody>
+      </table>
+    </div>
+
+    <div style="margin-top:12px;font-size:11px;color:var(--faint);text-align:center;">
+      Rates: 1 CAD = 2.619 AED · 1 USD = 1.412 CAD · Source: Wise / fxfeed.io, Nov 9 2026
+    </div>
+  </div>
+</section>
+
+<!-- PIPELINE -->
+<section class="view" id="view-pipeline">
+  <!-- Summary band -->
+  <div class="summary-band" style="grid-template-columns:repeat(4,1fr)">
+    <div class="scard hot">
+      <div class="scard-label">HOT</div>
+      <div class="scard-val" id="sp-hot">$109,031</div>
+      <div class="scard-sub" id="sp-hot-n">5 deals</div>
+    </div>
+    <div class="scard warm">
+      <div class="scard-label">WARM</div>
+      <div class="scard-val" id="sp-warm">$149,846</div>
+      <div class="scard-sub" id="sp-warm-n">8 deals</div>
+    </div>
+    <div class="scard cold">
+      <div class="scard-label">COLD</div>
+      <div class="scard-val" id="sp-cold">$221,090</div>
+      <div class="scard-sub" id="sp-cold-n">16 deals</div>
+    </div>
+    <div class="scard total">
+      <div class="scard-label">TOTAL PIPELINE</div>
+      <div class="scard-val" id="sp-total">$479,967</div>
+      <div class="scard-sub" id="sp-total-n">29 opportunities</div>
+    </div>
+  </div>
+
+  <!-- Rating breakdown bar -->
+  <div class="rating-bar" id="rating-bar">
+    <div class="rb-group">
+      <div class="rb-label">HOT</div>
+      <div class="rb-val hot-c" id="rb-hot-val">$109,031</div>
+      <div class="rb-sub" id="rb-hot-n">5 deals</div>
+    </div>
+    <div class="rb-divider"></div>
+    <div class="rb-group">
+      <div class="rb-label">WARM</div>
+      <div class="rb-val warm-c" id="rb-warm-val">$149,846</div>
+      <div class="rb-sub" id="rb-warm-n">8 deals</div>
+    </div>
+    <div class="rb-divider"></div>
+    <div class="rb-group">
+      <div class="rb-label">COLD</div>
+      <div class="rb-val cold-c" id="rb-cold-val">$221,090</div>
+      <div class="rb-sub" id="rb-cold-n">16 deals</div>
+    </div>
+    <div class="rb-divider"></div>
+    <div class="rb-group">
+      <div class="rb-label">CONFIRMED</div>
+      <div class="rb-val conf-c" id="rb-conf-val">$0</div>
+      <div class="rb-sub" id="rb-conf-n">0 deals</div>
+    </div>
+    <div class="rb-divider"></div>
+    <div class="rb-bar-wrap">
+      <div class="rb-label" style="margin-bottom:6px;">VALUE MIX</div>
+      <div class="rb-track" id="rb-track">
+        <div class="rb-seg hot" id="rb-seg-hot" style="width: 22.7%;"></div>
+        <div class="rb-seg warm" id="rb-seg-warm" style="width: 31.2%;"></div>
+        <div class="rb-seg conf" id="rb-seg-conf" style="width:0%"></div>
+        <div class="rb-seg cold" id="rb-seg-cold" style="width: 46.1%;"></div>
+      </div>
+    </div>
+    <div class="rb-divider"></div>
+    <div class="rb-group">
+      <div class="rb-label">TOTAL</div>
+      <div class="rb-val total-c" id="rb-total-val">$479,967</div>
+      <div class="rb-sub" id="rb-total-n">29 total</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-title">PIPELINE OPPORTUNITIES — USA1</div>
+      <div class="panel-actions">
+        <button class="btn primary" onclick="openAddModal()">+ Add Prospect</button>
+        <button class="btn export" onclick="exportCSV('pipe')">↓ Export</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Opportunity</th>
+            <th>Stage</th>
+            <th>Market</th>
+            <th>Close Date</th>
+            <th class="r">Value</th>
+            <th>Currency</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="pipe-body"><tr data-pipe-name="Westech Irrigation">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Westech Irrigation',this)">
+            ▸
+          </button>
+          Westech Irrigation
+        </div>
+      </td>
+      <td><span class="type-pill">Proposal</span></td>
+      <td>Canada</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Oct 2026</span></td>
+      <td class="mono highlight">$36,467</td>
+      <td><span class="curr-tag">CAD</span></td>
+      <td><span class="temp-badge Hot" onclick="event.stopPropagation();cyclePipe(event,'Westech Irrigation')"><span class="dot"></span>Hot</span></td>
+    </tr><tr class="notes-row" data-notes-for="Westech Irrigation" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Westech_Irrigation"></div></td></tr><tr data-pipe-name="Durham Community Health">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Durham Community Health',this)">
+            ▸
+          </button>
+          Durham Community Health
+        </div>
+      </td>
+      <td><span class="type-pill">Proposal</span></td>
+      <td>Canada</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Oct 2026</span></td>
+      <td class="mono highlight">$27,816</td>
+      <td><span class="curr-tag">CAD</span></td>
+      <td><span class="temp-badge Hot" onclick="event.stopPropagation();cyclePipe(event,'Durham Community Health')"><span class="dot"></span>Hot</span></td>
+    </tr><tr class="notes-row" data-notes-for="Durham Community Health" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Durham_Community_Health"></div></td></tr><tr data-pipe-name="Port Credit Village Pharmacy">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Port Credit Village Pharmacy',this)">
+            ▸
+          </button>
+          Port Credit Village Pharmacy
+        </div>
+      </td>
+      <td><span class="type-pill">Proposal</span></td>
+      <td>Canada</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Oct 2026</span></td>
+      <td class="mono highlight">$20,679</td>
+      <td><span class="curr-tag">CAD</span></td>
+      <td><span class="temp-badge Hot" onclick="event.stopPropagation();cyclePipe(event,'Port Credit Village Pharmacy')"><span class="dot"></span>Hot</span></td>
+    </tr><tr class="notes-row" data-notes-for="Port Credit Village Pharmacy" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Port_Credit_Village_Pharmacy"></div></td></tr><tr data-pipe-name="Allied International">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Allied International',this)">
+            ▸
+          </button>
+          Allied International
+        </div>
+      </td>
+      <td><span class="type-pill">Proposal</span></td>
+      <td>USA</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Oct 2026</span></td>
+      <td class="mono highlight">$17,628</td>
+      <td><span class="curr-tag">USD</span></td>
+      <td><span class="temp-badge Hot" onclick="event.stopPropagation();cyclePipe(event,'Allied International')"><span class="dot"></span>Hot</span></td>
+    </tr><tr class="notes-row" data-notes-for="Allied International" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Allied_International"></div></td></tr><tr data-pipe-name="Frosty Hollow Lodging">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Frosty Hollow Lodging',this)">
+            ▸
+          </button>
+          Frosty Hollow Lodging
+        </div>
+      </td>
+      <td><span class="type-pill">Proposal</span></td>
+      <td>USA</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Oct 2026</span></td>
+      <td class="mono highlight">$6,441</td>
+      <td><span class="curr-tag">USD</span></td>
+      <td><span class="temp-badge Hot" onclick="event.stopPropagation();cyclePipe(event,'Frosty Hollow Lodging')"><span class="dot"></span>Hot</span></td>
+    </tr><tr class="notes-row" data-notes-for="Frosty Hollow Lodging" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Frosty_Hollow_Lodging"></div></td></tr><tr data-pipe-name="Federal Pipe &amp; Supply">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Federal Pipe &amp; Supply',this)">
+            ▸
+          </button>
+          Federal Pipe &amp; Supply
+        </div>
+      </td>
+      <td><span class="type-pill">Proposal</span></td>
+      <td>USA</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Nov 2026</span></td>
+      <td class="mono highlight">$47,799</td>
+      <td><span class="curr-tag">USD</span></td>
+      <td><span class="temp-badge Warm" onclick="event.stopPropagation();cyclePipe(event,'Federal Pipe &amp; Supply')"><span class="dot"></span>Warm</span></td>
+    </tr><tr class="notes-row" data-notes-for="Federal Pipe &amp; Supply" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Federal_Pipe___Supply"></div></td></tr><tr data-pipe-name="Season Fresh Trading">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Season Fresh Trading',this)">
+            ▸
+          </button>
+          Season Fresh Trading
+        </div>
+      </td>
+      <td><span class="type-pill">Proposal</span></td>
+      <td>Canada</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Dec 2026</span></td>
+      <td class="mono highlight">$24,984</td>
+      <td><span class="curr-tag">CAD</span></td>
+      <td><span class="temp-badge Warm" onclick="event.stopPropagation();cyclePipe(event,'Season Fresh Trading')"><span class="dot"></span>Warm</span></td>
+    </tr><tr class="notes-row" data-notes-for="Season Fresh Trading" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Season_Fresh_Trading"></div></td></tr><tr data-pipe-name="Indcan Imports">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Indcan Imports',this)">
+            ▸
+          </button>
+          Indcan Imports
+        </div>
+      </td>
+      <td><span class="type-pill">Proposal</span></td>
+      <td>Canada</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Nov 2026</span></td>
+      <td class="mono highlight">$15,368</td>
+      <td><span class="curr-tag">CAD</span></td>
+      <td><span class="temp-badge Warm" onclick="event.stopPropagation();cyclePipe(event,'Indcan Imports')"><span class="dot"></span>Warm</span></td>
+    </tr><tr class="notes-row" data-notes-for="Indcan Imports" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Indcan_Imports"></div></td></tr><tr data-pipe-name="Leather Living Furniture">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Leather Living Furniture',this)">
+            ▸
+          </button>
+          Leather Living Furniture
+        </div>
+      </td>
+      <td><span class="type-pill">Demo</span></td>
+      <td>Canada</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Dec 2026</span></td>
+      <td class="mono highlight">$14,916</td>
+      <td><span class="curr-tag">CAD</span></td>
+      <td><span class="temp-badge Warm" onclick="event.stopPropagation();cyclePipe(event,'Leather Living Furniture')"><span class="dot"></span>Warm</span></td>
+    </tr><tr class="notes-row" data-notes-for="Leather Living Furniture" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Leather_Living_Furniture"></div></td></tr><tr data-pipe-name="TGG Mastronardi">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('TGG Mastronardi',this)">
+            ▸
+          </button>
+          TGG Mastronardi
+        </div>
+      </td>
+      <td><span class="type-pill">Proposal</span></td>
+      <td>Canada</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Dec 2026</span></td>
+      <td class="mono highlight">$13,786</td>
+      <td><span class="curr-tag">CAD</span></td>
+      <td><span class="temp-badge Warm" onclick="event.stopPropagation();cyclePipe(event,'TGG Mastronardi')"><span class="dot"></span>Warm</span></td>
+    </tr><tr class="notes-row" data-notes-for="TGG Mastronardi" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-TGG_Mastronardi"></div></td></tr><tr data-pipe-name="Africa Trade Desk">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Africa Trade Desk',this)">
+            ▸
+          </button>
+          Africa Trade Desk
+        </div>
+      </td>
+      <td><span class="type-pill">Proposal</span></td>
+      <td>Canada</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Nov 2026</span></td>
+      <td class="mono highlight">$12,769</td>
+      <td><span class="curr-tag">CAD</span></td>
+      <td><span class="temp-badge Warm" onclick="event.stopPropagation();cyclePipe(event,'Africa Trade Desk')"><span class="dot"></span>Warm</span></td>
+    </tr><tr class="notes-row" data-notes-for="Africa Trade Desk" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Africa_Trade_Desk"></div></td></tr><tr data-pipe-name="Mariano Brothers">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Mariano Brothers',this)">
+            ▸
+          </button>
+          Mariano Brothers
+        </div>
+      </td>
+      <td><span class="type-pill">Proposal</span></td>
+      <td>USA</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Nov 2026</span></td>
+      <td class="mono highlight">$10,800</td>
+      <td><span class="curr-tag">USD</span></td>
+      <td><span class="temp-badge Warm" onclick="event.stopPropagation();cyclePipe(event,'Mariano Brothers')"><span class="dot"></span>Warm</span></td>
+    </tr><tr class="notes-row" data-notes-for="Mariano Brothers" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Mariano_Brothers"></div></td></tr><tr data-pipe-name="Macarona Produce">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Macarona Produce',this)">
+            ▸
+          </button>
+          Macarona Produce
+        </div>
+      </td>
+      <td><span class="type-pill">Proposal</span></td>
+      <td>USA</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Nov 2026</span></td>
+      <td class="mono highlight">$9,424</td>
+      <td><span class="curr-tag">USD</span></td>
+      <td><span class="temp-badge Warm" onclick="event.stopPropagation();cyclePipe(event,'Macarona Produce')"><span class="dot"></span>Warm</span></td>
+    </tr><tr class="notes-row" data-notes-for="Macarona Produce" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Macarona_Produce"></div></td></tr><tr data-pipe-name="Riz Brands MRP">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Riz Brands MRP',this)">
+            ▸
+          </button>
+          Riz Brands MRP
+        </div>
+      </td>
+      <td><span class="type-pill">Proposal</span></td>
+      <td>Canada</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Dec 2026</span></td>
+      <td class="mono highlight">$30,329</td>
+      <td><span class="curr-tag">CAD</span></td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Riz Brands MRP')"><span class="dot"></span>Cold</span></td>
+    </tr><tr class="notes-row" data-notes-for="Riz Brands MRP" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Riz_Brands_MRP"></div></td></tr><tr data-pipe-name="Al Shamas Food Products">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Al Shamas Food Products',this)">
+            ▸
+          </button>
+          Al Shamas Food Products
+        </div>
+      </td>
+      <td><span class="type-pill">Lead Qualification</span></td>
+      <td>Canada</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Dec 2026</span></td>
+      <td class="mono highlight">$18,080</td>
+      <td><span class="curr-tag">CAD</span></td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Al Shamas Food Products')"><span class="dot"></span>Cold</span></td>
+    </tr><tr class="notes-row" data-notes-for="Al Shamas Food Products" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Al_Shamas_Food_Products"></div></td></tr><tr data-pipe-name="Donald J Ross Enterprises">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Donald J Ross Enterprises',this)">
+            ▸
+          </button>
+          Donald J Ross Enterprises
+        </div>
+      </td>
+      <td><span class="type-pill">Lead Qualification</span></td>
+      <td>Canada</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Dec 2026</span></td>
+      <td class="mono highlight">$18,080</td>
+      <td><span class="curr-tag">CAD</span></td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Donald J Ross Enterprises')"><span class="dot"></span>Cold</span></td>
+    </tr><tr class="notes-row" data-notes-for="Donald J Ross Enterprises" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Donald_J_Ross_Enterprises"></div></td></tr><tr data-pipe-name="Grand River Freight">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Grand River Freight',this)">
+            ▸
+          </button>
+          Grand River Freight
+        </div>
+      </td>
+      <td><span class="type-pill">Demo</span></td>
+      <td>Canada</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Dec 2026</span></td>
+      <td class="mono highlight">$18,080</td>
+      <td><span class="curr-tag">CAD</span></td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Grand River Freight')"><span class="dot"></span>Cold</span></td>
+    </tr><tr class="notes-row" data-notes-for="Grand River Freight" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Grand_River_Freight"></div></td></tr><tr data-pipe-name="Switch Business Systems">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Switch Business Systems',this)">
+            ▸
+          </button>
+          Switch Business Systems
+        </div>
+      </td>
+      <td><span class="type-pill">Lead Qualification</span></td>
+      <td>USA</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Dec 2026</span></td>
+      <td class="mono highlight">$16,950</td>
+      <td><span class="curr-tag">USD</span></td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Switch Business Systems')"><span class="dot"></span>Cold</span></td>
+    </tr><tr class="notes-row" data-notes-for="Switch Business Systems" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Switch_Business_Systems"></div></td></tr><tr data-pipe-name="Quantiam">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Quantiam',this)">
+            ▸
+          </button>
+          Quantiam
+        </div>
+      </td>
+      <td><span class="type-pill">Lead Qualification</span></td>
+      <td>Canada</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Dec 2026</span></td>
+      <td class="mono highlight">$16,800</td>
+      <td><span class="curr-tag">CAD</span></td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Quantiam')"><span class="dot"></span>Cold</span></td>
+    </tr><tr class="notes-row" data-notes-for="Quantiam" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Quantiam"></div></td></tr><tr data-pipe-name="H D Edwards">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('H D Edwards',this)">
+            ▸
+          </button>
+          H D Edwards
+        </div>
+      </td>
+      <td><span class="type-pill">Proposal</span></td>
+      <td>USA</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Dec 2026</span></td>
+      <td class="mono highlight">$14,939</td>
+      <td><span class="curr-tag">USD</span></td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'H D Edwards')"><span class="dot"></span>Cold</span></td>
+    </tr><tr class="notes-row" data-notes-for="H D Edwards" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-H_D_Edwards"></div></td></tr><tr data-pipe-name="United Beauty">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('United Beauty',this)">
+            ▸
+          </button>
+          United Beauty
+        </div>
+      </td>
+      <td><span class="type-pill">Lead Qualification</span></td>
+      <td>Canada</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Dec 2026</span></td>
+      <td class="mono highlight">$13,560</td>
+      <td><span class="curr-tag">CAD</span></td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'United Beauty')"><span class="dot"></span>Cold</span></td>
+    </tr><tr class="notes-row" data-notes-for="United Beauty" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-United_Beauty"></div></td></tr><tr data-pipe-name="Cotton Funeral Service">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Cotton Funeral Service',this)">
+            ▸
+          </button>
+          Cotton Funeral Service
+        </div>
+      </td>
+      <td><span class="type-pill">Proposal</span></td>
+      <td>USA</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Dec 2026</span></td>
+      <td class="mono highlight">$13,334</td>
+      <td><span class="curr-tag">USD</span></td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Cotton Funeral Service')"><span class="dot"></span>Cold</span></td>
+    </tr><tr class="notes-row" data-notes-for="Cotton Funeral Service" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Cotton_Funeral_Service"></div></td></tr><tr data-pipe-name="Blue Heron Battery">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Blue Heron Battery',this)">
+            ▸
+          </button>
+          Blue Heron Battery
+        </div>
+      </td>
+      <td><span class="type-pill">Proposal</span></td>
+      <td>USA</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Oct 2026</span></td>
+      <td class="mono highlight">$12,430</td>
+      <td><span class="curr-tag">USD</span></td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Blue Heron Battery')"><span class="dot"></span>Cold</span></td>
+    </tr><tr class="notes-row" data-notes-for="Blue Heron Battery" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Blue_Heron_Battery"></div></td></tr><tr data-pipe-name="Cranetech">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Cranetech',this)">
+            ▸
+          </button>
+          Cranetech
+        </div>
+      </td>
+      <td><span class="type-pill">Proposal</span></td>
+      <td>USA</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Dec 2026</span></td>
+      <td class="mono highlight">$12,204</td>
+      <td><span class="curr-tag">USD</span></td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Cranetech')"><span class="dot"></span>Cold</span></td>
+    </tr><tr class="notes-row" data-notes-for="Cranetech" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Cranetech"></div></td></tr><tr data-pipe-name="Kings Cash &amp; Carry">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Kings Cash &amp; Carry',this)">
+            ▸
+          </button>
+          Kings Cash &amp; Carry
+        </div>
+      </td>
+      <td><span class="type-pill">Demo</span></td>
+      <td>USA</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Dec 2026</span></td>
+      <td class="mono highlight">$11,752</td>
+      <td><span class="curr-tag">USD</span></td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Kings Cash &amp; Carry')"><span class="dot"></span>Cold</span></td>
+    </tr><tr class="notes-row" data-notes-for="Kings Cash &amp; Carry" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Kings_Cash___Carry"></div></td></tr><tr data-pipe-name="Kustom Power Solutions">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Kustom Power Solutions',this)">
+            ▸
+          </button>
+          Kustom Power Solutions
+        </div>
+      </td>
+      <td><span class="type-pill">Proposal</span></td>
+      <td>Canada</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Dec 2026</span></td>
+      <td class="mono highlight">$11,526</td>
+      <td><span class="curr-tag">CAD</span></td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Kustom Power Solutions')"><span class="dot"></span>Cold</span></td>
+    </tr><tr class="notes-row" data-notes-for="Kustom Power Solutions" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Kustom_Power_Solutions"></div></td></tr><tr data-pipe-name="Distribution ISM">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Distribution ISM',this)">
+            ▸
+          </button>
+          Distribution ISM
+        </div>
+      </td>
+      <td><span class="type-pill">Proposal</span></td>
+      <td>Canada</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Dec 2026</span></td>
+      <td class="mono highlight">$7,014</td>
+      <td><span class="curr-tag">CAD</span></td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Distribution ISM')"><span class="dot"></span>Cold</span></td>
+    </tr><tr class="notes-row" data-notes-for="Distribution ISM" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Distribution_ISM"></div></td></tr><tr data-pipe-name="New Granite &amp; Marble">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('New Granite &amp; Marble',this)">
+            ▸
+          </button>
+          New Granite &amp; Marble
+        </div>
+      </td>
+      <td><span class="type-pill">Discovery Session</span></td>
+      <td>USA</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Dec 2026</span></td>
+      <td class="mono highlight">$4,407</td>
+      <td><span class="curr-tag">USD</span></td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'New Granite &amp; Marble')"><span class="dot"></span>Cold</span></td>
+    </tr><tr class="notes-row" data-notes-for="New Granite &amp; Marble" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-New_Granite___Marble"></div></td></tr><tr data-pipe-name="Coldwell Banker Premier">
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('Coldwell Banker Premier',this)">
+            ▸
+          </button>
+          Coldwell Banker Premier
+        </div>
+      </td>
+      <td><span class="type-pill">Proposal</span></td>
+      <td>USA</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">Dec 2026</span></td>
+      <td class="mono highlight">$1,605</td>
+      <td><span class="curr-tag">USD</span></td>
+      <td><span class="temp-badge Cold" onclick="event.stopPropagation();cyclePipe(event,'Coldwell Banker Premier')"><span class="dot"></span>Cold</span></td>
+    </tr><tr class="notes-row" data-notes-for="Coldwell Banker Premier" style="display: none;"><td colspan="7"><div class="notes-cell" id="notes-cell-Coldwell_Banker_Premier"></div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+</div><!-- /wrap -->
+
+<!-- ADD PROSPECT MODAL -->
+<div class="overlay" id="modalOverlay" onclick="closeAddModal()"></div>
+<div class="modal" id="addModal">
+  <h3>Add New Prospect</h3>
+  <div class="form-row"><label>NAME</label><input id="f-name" placeholder="Company name"></div>
+  <div class="form-row"><label>DEAL VALUE</label><input id="f-val" type="number" placeholder="0"></div>
+  <div class="form-row"><label>CURRENCY</label>
+    <select id="f-curr"><option value="CAD">CAD</option><option value="USD">USD</option></select>
+  </div>
+  <div class="form-row"><label>CLOSE DATE</label><input id="f-date" type="month" value="2026-10"></div>
+  <div class="form-row"><label>RATING</label>
+    <select id="f-rating"><option value="Hot">Hot</option><option value="Warm">Warm</option><option value="Cold">Cold</option></select>
+  </div>
+  <div class="form-row"><label>STAGE</label>
+    <select id="f-stage">
+      <option>Lead Qualification</option>
+      <option>Discovery Session</option>
+      <option>Demo</option>
+      <option selected="">Proposal</option>
+    </select>
+  </div>
+  <div class="form-row"><label>MARKET</label>
+    <select id="f-market"><option>Canada</option><option>USA</option></select>
+  </div>
+  <div class="form-row"><label>NOTES / INITIAL COMMENT</label>
+    <textarea id="f-notes" placeholder="What's the context on this prospect?"></textarea>
+  </div>
+  <div class="form-actions">
+    <button class="btn" onclick="closeAddModal()">Cancel</button>
+    <button class="btn primary" onclick="addProspect()">Add to Pipeline</button>
+  </div>
+</div>
+
+<!-- CONVERT TO CUSTOMER MODAL -->
+<div class="overlay" id="convertOverlay" onclick="closeConvertModal()"></div>
+<div class="modal" id="convertModal">
+  <h3>Convert to Customer</h3>
+  <div class="convert-prospect-name" id="convert-prospect-name">Ocean Crisp Apples</div>
+  <div class="convert-info">Set the projected collection amounts for Q4. The opportunity will be removed from Pipeline and added to Collections.</div>
+  <div class="form-row"><label>CURRENCY</label>
+    <select id="cv-curr"><option value="CAD">CAD</option><option value="USD">USD</option></select>
+  </div>
+  <div class="convert-month-grid">
+    <div class="cmg-col"><label>OCTOBER</label><input id="cv-oct" type="number" placeholder="0"></div>
+    <div class="cmg-col"><label>NOVEMBER</label><input id="cv-nov" type="number" placeholder="0"></div>
+    <div class="cmg-col"><label>DECEMBER</label><input id="cv-dec" type="number" placeholder="0"></div>
+  </div>
+  <div class="form-row"><label>UPSELL OPPORTUNITY</label>
+    <select id="cv-upsell"><option value="">None</option><option value="1000">$1,000</option><option value="5000">$5,000</option><option value="10000">$10,000</option><option value="custom">Custom…</option></select>
+  </div>
+  <div class="form-row" id="cv-upsell-custom-row" style="display:none;"><label>CUSTOM UPSELL AMOUNT</label><input id="cv-upsell-custom" type="number" placeholder="0"></div>
+  <div class="form-actions">
+    <button class="btn" onclick="closeConvertModal()">Cancel</button>
+    <button class="btn primary" onclick="confirmConvert()">✓ Convert to Customer</button>
+  </div>
+</div>
+
+<!-- DRAWER -->
+<div class="overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  <div class="dtag" id="d-tag">CUSTOMER · COLLECTIONS</div>
+  <h2 id="d-name">Cosmos</h2>
+  <div class="df"><div class="fl">STATUS / RATING</div>
+    <div class="ratepicker" id="ratePicker" style="display: none;">
+      <button class="ratebtn Hot" data-rate="Hot">Hot</button>
+      <button class="ratebtn Warm" data-rate="Warm">Warm</button>
+      <button class="ratebtn Cold on" data-rate="Cold">Cold</button>
+      <button class="ratebtn Confirmed" data-rate="Confirmed">Confirmed</button>
+    </div>
+  </div>
+  <div id="d-monthly-edit" style="display: block;">
+    <div class="df">
+      <div class="fl">MONTHLY AMOUNTS (CAD)</div>
+      <div class="month-labels"><span>OCT</span><span>NOV</span><span>DEC</span></div>
+      <div class="month-edit">
+        <input id="d-oct" type="number" placeholder="0">
+        <input id="d-nov" type="number" placeholder="0">
+        <input id="d-dec" type="number" placeholder="0">
+      </div>
+      <button class="btn primary" style="margin-top:10px;width:100%;justify-content:center;" onclick="saveMonthly()">Save Amounts</button>
+    </div>
+  </div>
+  <div class="df"><div class="fl">TYPE</div><div class="fv" id="d-type">Existing Customer</div></div>
+  <div id="d-stage-row" class="df" style="display: none;"><div class="fl">STAGE</div><div class="fv" id="d-stage">Proposal</div></div>
+  <div id="d-market-row" class="df" style="display: none;"><div class="fl">MARKET</div><div class="fv" id="d-market">USA</div></div>
+  <div class="df"><div class="fl">Q4 VALUE</div><div class="fv" id="d-val" style="font-family:'Newsreader',serif;font-size:20px;">$0 CAD</div></div>
+  <div id="d-comment-row" class="df" style="display: none;"><div class="fl">LATEST NOTES</div><div class="comment-box" id="d-comment">Demo, proposal, and testing env provided. Expecting response this week.</div></div>
+  <div id="d-convert-row" style="display: none;">
+    <button class="convert-btn" onclick="openConvertModal()">↗ Convert to Customer</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">Amounts saved for Demand Planners</div>
+
+<footer>Q4 2026 · USA1 Region · Focus Softnet Canada · <a href="#" onclick="resetAll(event)" style="color:var(--faint);">reset overrides</a></footer>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+
+const CUSTOMERS = [
+  {name:"Artisan West",   oct:2500,  nov:0,     dec:0,     upsell:false, upsellAmt:0},
+  {name:"AS Brothers",    oct:0,     nov:1500,  dec:1500,  upsell:false, upsellAmt:0},
+  {name:"Atlantic Autocold",oct:0,   nov:0,     dec:7800,  upsell:false, upsellAmt:0},
+  {name:"Celltech",       oct:0,     nov:3720,  dec:0,     upsell:false, upsellAmt:0},
+  {name:"Cosmos",         oct:0,     nov:0,     dec:0,     upsell:false, upsellAmt:0},
+  {name:"Cutting Edge",   oct:0,     nov:0,     dec:0,     upsell:false, upsellAmt:0},
+  {name:"Delta",          oct:0,     nov:0,     dec:22000, upsell:false, upsellAmt:0},
+  {name:"Demand Planners",oct:2400,  nov:0,     dec:0,     upsell:false, upsellAmt:0},
+  {name:"Glen Briar",     oct:0,     nov:4500,  dec:0,     upsell:false, upsellAmt:0},
+  {name:"Globe Metal",    oct:0,     nov:13500, dec:32460, upsell:false, upsellAmt:0},
+  {name:"HOBC",           oct:0,     nov:0,     dec:0,     upsell:false, upsellAmt:0},
+  {name:"HWTG",           oct:20000, nov:0,     dec:0,     upsell:false, upsellAmt:0},
+  {name:"JP Doumak",      oct:0,     nov:0,     dec:0,     upsell:false, upsellAmt:0},
+  {name:"Kwality",        oct:0,     nov:0,     dec:12000, upsell:false, upsellAmt:0},
+  {name:"Lifta",          oct:0,     nov:0,     dec:0,     upsell:false, upsellAmt:0},
+  {name:"Matrix Canada",  oct:0,     nov:0,     dec:0,     upsell:false, upsellAmt:0},
+  {name:"Matrix USA",     oct:0,     nov:15000, dec:0,     upsell:false, upsellAmt:0},
+  {name:"National Warehousing",oct:2500,nov:0, dec:0,     upsell:false, upsellAmt:0},
+  {name:"OIC",            oct:0,     nov:10000, dec:55000, upsell:false, upsellAmt:10000},
+  {name:"Peterbrown",     oct:0,     nov:0,     dec:0,     upsell:true,  upsellAmt:1000},
+  {name:"Rajdhani",       oct:0,     nov:0,     dec:0,     upsell:false, upsellAmt:0},
+  {name:"Schmuve",        oct:0,     nov:0,     dec:0,     upsell:true,  upsellAmt:5000},
+  {name:"Seel LLC",       oct:0,     nov:0,     dec:0,     upsell:true,  upsellAmt:1000},
+  {name:"SofabyFancy",    oct:0,     nov:0,     dec:0,     upsell:true,  upsellAmt:5000},
+  {name:"SOTG",           oct:51870, nov:0,     dec:20000, upsell:false, upsellAmt:0},
+  {name:"Tamisha",        oct:0,     nov:2500,  dec:2500,  upsell:false, upsellAmt:0},
+  {name:"TWC",            oct:0,     nov:0,     dec:0,     upsell:true,  upsellAmt:5000},
+  {name:"Wes Tech Irrigation",oct:18500,nov:0, dec:6500,  upsell:false, upsellAmt:0},
+];
+
+const PIPELINE = [
+  {name:"Food Pak Express",      stage:"Proposal",          country:"USA", amt:76000, currency:"USD", temp:"Hot",  closeDate:"2026-10", notes:[{text:"Hard deal. Requested Chinese print layouts — provided. Waiting mid-Sept decision.",date:"Sep 2026"}]},
+  {name:"Allied International",  stage:"Proposal",          country:"USA", amt:17628, currency:"USD", temp:"Hot",  closeDate:"2026-10", notes:[{text:"Following up; reviewing two other proposals.",date:"Sep 2026"}]},
+  {name:"Blue Heron Battery",    stage:"Proposal",          country:"USA", amt:12430, currency:"USD", temp:"Hot",  closeDate:"2026-10", notes:[{text:"Demo, proposal, and testing env provided. Expecting response this week.",date:"Sep 2026"}]},
+  {name:"Westech Irrigation",    stage:"Proposal",          country:"Canada",amt:36467,currency:"CAD",temp:"Hot",  closeDate:"2026-10", notes:[{text:"Demo + proposal + testing env done. Owner reconnects mid-Sept.",date:"Sep 2026"}]},
+  {name:"Durham Community Health",stage:"Proposal",         country:"Canada",amt:27816,currency:"CAD",temp:"Hot",  closeDate:"2026-10", notes:[{text:"Demo scheduled Thursday after much follow-up.",date:"Sep 2026"}]},
+  {name:"Frosty Hollow Lodging", stage:"Proposal",          country:"USA", amt:6441,  currency:"USD", temp:"Hot",  closeDate:"2026-10", notes:[{text:"Liked system; needs deeper discussion. Somewhat disorganized company.",date:"Sep 2026"}]},
+  {name:"Ocean Crisp Apples",    stage:"Lead Qualification",country:"Canada",amt:49000,currency:"CAD",temp:"Warm", closeDate:"2026-10", notes:[{text:"Meeting Thursday for second demo and questions.",date:"Sep 2026"}]},
+  {name:"Federal Pipe & Supply", stage:"Proposal",          country:"USA", amt:47799, currency:"USD", temp:"Warm", closeDate:"2026-11", notes:[{text:"Spoke today; reach out third week of September.",date:"Sep 2026"}]},
+  {name:"Indcan Imports",        stage:"Proposal",          country:"Canada",amt:15368,currency:"CAD",temp:"Warm", closeDate:"2026-11", notes:[{text:"Active back-and-forth; met in person. Likely 1–2 months out.",date:"Sep 2026"}]},
+  {name:"Leather Living Furniture",stage:"Demo",            country:"Canada",amt:14916,currency:"CAD",temp:"Warm", closeDate:"2026-12", notes:[{text:"Sending proposal Sept 2; hoping to close by year-end.",date:"Sep 2026"}]},
+  {name:"TGG Mastronardi",       stage:"Proposal",          country:"Canada",amt:13786,currency:"CAD",temp:"Warm", closeDate:"2026-12", notes:[{text:"Holding until year-end; busy with farming season.",date:"Sep 2026"}]},
+  {name:"Mariano Brothers",      stage:"Proposal",          country:"USA", amt:10800, currency:"USD", temp:"Warm", closeDate:"2026-11", notes:[{text:"Asked to reach out again mid-September.",date:"Sep 2026"}]},
+  {name:"Macarona Produce",      stage:"Proposal",          country:"USA", amt:9424,  currency:"USD", temp:"Warm", closeDate:"2026-11", notes:[{text:"Reach out October due to Jewish holidays.",date:"Sep 2026"}]},
+  {name:"Africa Trade Desk",     stage:"Proposal",          country:"Canada",amt:12769,currency:"CAD",temp:"Warm", closeDate:"2026-11", notes:[{text:"Waiting on funding. Staying in touch; spoke within 10 days.",date:"Sep 2026"}]},
+  {name:"Season Fresh Trading",  stage:"Proposal",          country:"Canada",amt:24984,currency:"CAD",temp:"Warm", closeDate:"2026-12", notes:[{text:"Holding until year-end.",date:"Sep 2026"}]},
+  {name:"Port Credit Village Pharmacy",stage:"Proposal",    country:"Canada",amt:20679,currency:"CAD",temp:"Hot",  closeDate:"2026-10", notes:[{text:"Setting up two warehouses; has not responded yet.",date:"Sep 2026"}]},
+  {name:"Riz Brands MRP",        stage:"Proposal",          country:"Canada",amt:30329,currency:"CAD",temp:"Cold", closeDate:"2026-12", notes:[{text:"Proposal out but prospect has not responded.",date:"Sep 2026"}]},
+  {name:"Al Shamas Food Products",stage:"Lead Qualification",country:"Canada",amt:18080,currency:"CAD",temp:"Cold",closeDate:"2026-12", notes:[{text:"Postponed until year-end; not a current focus.",date:"Sep 2026"}]},
+  {name:"Switch Business Systems",stage:"Lead Qualification",country:"USA", amt:16950, currency:"USD", temp:"Cold", closeDate:"2026-12", notes:[{text:"Prospect traveling; proper demo not completed.",date:"Sep 2026"}]},
+  {name:"Cranetech",             stage:"Proposal",          country:"USA", amt:12204, currency:"USD", temp:"Cold", closeDate:"2026-12", notes:[{text:"No response in a long time.",date:"Sep 2026"}]},
+  {name:"Cotton Funeral Service",stage:"Proposal",          country:"USA", amt:13334, currency:"USD", temp:"Cold", closeDate:"2026-12", notes:[{text:"No response in a long time.",date:"Sep 2026"}]},
+  {name:"H D Edwards",           stage:"Proposal",          country:"USA", amt:14939, currency:"USD", temp:"Cold", closeDate:"2026-12", notes:[{text:"Not responding.",date:"Sep 2026"}]},
+  {name:"Donald J Ross Enterprises",stage:"Lead Qualification",country:"Canada",amt:18080,currency:"CAD",temp:"Cold",closeDate:"2026-12", notes:[{text:"Owner's daughter managing; vague requirements. Low priority.",date:"Sep 2026"}]},
+  {name:"Quantiam",              stage:"Lead Qualification",country:"Canada",amt:16800,currency:"CAD",temp:"Cold", closeDate:"2026-12", notes:[{text:"Believed to have moved to another system (unconfirmed).",date:"Sep 2026"}]},
+  {name:"Kustom Power Solutions",stage:"Proposal",          country:"Canada",amt:11526,currency:"CAD",temp:"Cold", closeDate:"2026-12", notes:[{text:"No response; no demo in a long time.",date:"Sep 2026"}]},
+  {name:"Grand River Freight",   stage:"Demo",              country:"Canada",amt:18080,currency:"CAD",temp:"Cold", closeDate:"2026-12", notes:[{text:"Not responding at all.",date:"Sep 2026"}]},
+  {name:"United Beauty",         stage:"Lead Qualification",country:"Canada",amt:13560,currency:"CAD",temp:"Cold", closeDate:"2026-12", notes:[{text:"Difficult contact; not the right customer fit.",date:"Sep 2026"}]},
+  {name:"Distribution ISM",      stage:"Proposal",          country:"Canada",amt:7014, currency:"CAD",temp:"Cold", closeDate:"2026-12", notes:[{text:"Wants price well below what we can offer.",date:"Sep 2026"}]},
+  {name:"Kings Cash & Carry",    stage:"Demo",              country:"USA", amt:11752, currency:"USD", temp:"Cold", closeDate:"2026-12", notes:[{text:"No response in a long time.",date:"Sep 2026"}]},
+  {name:"New Granite & Marble",  stage:"Discovery Session", country:"USA", amt:4407,  currency:"USD", temp:"Cold", closeDate:"2026-12", notes:[{text:"No response in a long time.",date:"Sep 2026"}]},
+  {name:"Coldwell Banker Premier",stage:"Proposal",         country:"USA", amt:1605,  currency:"USD", temp:"Cold", closeDate:"2026-12", notes:[{text:"Single-user deal; prospect has not responded.",date:"Sep 2026"}]},
+];
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+const SK = 'usa1_q4_2026_v2';
+function loadState(){
+  // 1. Try baked state (set by saveFile before localStorage, works across file:// origins)
+  if(window.__BAKED_STATE__ && Object.keys(window.__BAKED_STATE__).length){
+    // Also persist it to localStorage so subsequent saves pick it up
+    try{localStorage.setItem(SK,JSON.stringify(window.__BAKED_STATE__));}catch(e){}
+    return window.__BAKED_STATE__;
+  }
+  // 2. Fall back to localStorage
+  try{return JSON.parse(localStorage.getItem(SK)||'{}')}catch{return{}}
+}
+function saveState(s){
+  // Stamp the save time
+  const now=new Date();
+  s.lastSaved=now.toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'numeric'})+' '+now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  try{localStorage.setItem(SK,JSON.stringify(s))}catch{}
+  // Update the last-updated label live
+  const lbl=document.getElementById('last-updated-lbl');
+  if(lbl) lbl.textContent='Data as of '+s.lastSaved;
+}
+let S = loadState();
+
+// Track which pipeline rows are expanded
+const expandedRows = new Set();
+
+// ── COLLECTION STATUS ─────────────────────────────────────────────────────────
+// Status values: 'pending' | 'received' | 'deferred'
+// IMPORTANT: deferred status NEVER moves money between months.
+// Projected amounts always stay on the month they belong to.
+// Only 'received' status affects collected totals.
+function getCollStatus(name){
+  return S['coll_status_'+name]||{oct:'pending',nov:'pending',dec:'pending'};
+}
+function setCollStatus(name, month, newStatus){
+  const st = getCollStatus(name);
+  const prev = st[month];
+  // Toggle: clicking same active status resets to pending
+  const finalStatus = (prev === newStatus) ? 'pending' : newStatus;
+  st[month] = finalStatus;
+  S['coll_status_'+name] = st;
+  saveState(S);
+  renderAll();
+  const labels = {oct:'October',nov:'November',dec:'December'};
+  const nextLabel = {oct:'November',nov:'December',dec:'Q1 2027'};
+  if(finalStatus==='deferred'){
+    logAudit(name,`${labels[month]} deferred → ${nextLabel[month]}`,'defer');
+    toast(`${name} — ${labels[month]} deferred → ${nextLabel[month]}`);
+  } else if(finalStatus==='received'){
+    logAudit(name,`${labels[month]} marked as received ✓`,'received');
+    toast(`${name} — ${labels[month]} marked received ✓`);
+  } else {
+    logAudit(name,`${labels[month]} status reset to pending`,'edit');
+    toast(`${name} — ${labels[month]} reset to pending`);
+  }
+}
+function statusCellClass(st){ return st==='received'?' cell-received':st==='deferred'?' cell-deferred':''; }
+function statusBadge(st){
+  if(st==='received') return '<span class="status-badge recv">✓ Rcvd</span>';
+  if(st==='deferred') return '<span class="status-badge def">→ Def</span>';
+  return '';
+}
+
+// Apply saved overrides
+function applyOverrides(){
+  const removed  = new Set(S.removedCustomers || []);
+  const dropped  = new Set(S.droppedPipeline  || []);
+  // Remove any accounts/opportunities marked as removed
+  for(let i=CUSTOMERS.length-1;i>=0;i--){
+    if(removed.has(CUSTOMERS[i].name)) CUSTOMERS.splice(i,1);
+  }
+  for(let i=PIPELINE.length-1;i>=0;i--){
+    if(dropped.has(PIPELINE[i].name)) PIPELINE.splice(i,1);
+  }
+  CUSTOMERS.forEach(c=>{
+    const k = 'cust_'+c.name;
+    if(S[k]){
+      if(S[k].oct!==undefined) c.oct=S[k].oct;
+      if(S[k].nov!==undefined) c.nov=S[k].nov;
+      if(S[k].dec!==undefined) c.dec=S[k].dec;
+    }
+  });
+  PIPELINE.forEach(p=>{
+    const k='pipe_'+p.name;
+    if(S[k]){
+      if(S[k].temp) p.temp=S[k].temp;
+      if(S[k].notes) p.notes=S[k].notes;
+    }
+  });
+  if(S.newProspects){
+    S.newProspects.forEach(np=>{
+      if(!dropped.has(np.name) && !PIPELINE.find(p=>p.name===np.name)) PIPELINE.push(np);
+    });
+  }
+  if(S.convertedCustomers){
+    S.convertedCustomers.forEach(cc=>{
+      if(removed.has(cc.name)) return;
+      const pi=PIPELINE.findIndex(p=>p.name===cc.name);
+      if(pi>-1) PIPELINE.splice(pi,1);
+      if(!CUSTOMERS.find(c=>c.name===cc.name)){
+        CUSTOMERS.push({name:cc.name,oct:cc.oct||0,nov:cc.nov||0,dec:cc.dec||0,upsell:cc.upsell||false,upsellAmt:cc.upsellAmt||0,isConverted:true});
+      }
+    });
+  }
+}
+applyOverrides();
+
+// ── UTILS ────────────────────────────────────────────────────────────────────
+// ── CURRENCY CONVERSION ───────────────────────────────────────────────────────
+// Rates as of Nov 9, 2026 (mid-market). All values stored in CAD internally.
+let FX_RATES = { CAD:1, USD:0.7082, AED:2.619 }; // CAD → target; updated by syncFxRates()
+const FX_SYMBOLS = { CAD:'CA$', USD:'US$', AED:'AED ' };
+let activeCurrency = (S.currency)||'CAD';
+function conv(cadAmt){ return cadAmt * FX_RATES[activeCurrency]; }
+function setCurrency(c){
+  activeCurrency=c; S.currency=c; saveState(S);
+  document.querySelectorAll('.curr-pill').forEach(b=>b.classList.toggle('on',b.dataset.c===c));
+  renderAll();
+}
+const sym = ()=>FX_SYMBOLS[activeCurrency];
+const fmtNum = n => sym()+Math.round(conv(n)).toLocaleString('en-CA');
+const fmtCAD = n => n===0 ? '<span class="zero">—</span>' : sym()+Math.round(conv(n)).toLocaleString('en-CA');
+const fmtPipe = (n,origCurr)=>{
+  // Pipeline amounts are already in their native currency (USD or CAD). Convert to target.
+  const inCAD = origCurr==='USD' ? n*FX_RATES['CAD']/FX_RATES['USD'] : n; // USD→CAD first
+  // actually: if stored in USD, convert USD→CAD→target
+  const cadAmt = origCurr==='USD' ? n / FX_RATES['USD'] : n;
+  return sym()+Math.round(conv(cadAmt)).toLocaleString('en-CA');
+};
+const tempCycle = {Hot:'Warm',Warm:'Cold',Cold:'Confirmed',Confirmed:'Hot'};
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+function todayLabel(){
+  const d=new Date();
+  return d.toLocaleString('en-CA',{month:'short',year:'numeric'});
+}
+
+// ── COMPUTATIONS ─────────────────────────────────────────────────────────────
+// colTotals() always returns PROJECTED amounts — never affected by defer status.
+// Deferred or not, the projection stays on the original month.
+function colTotals(){
+  const oct=CUSTOMERS.reduce((s,c)=>s+c.oct,0);
+  const nov=CUSTOMERS.reduce((s,c)=>s+c.nov,0);
+  const dec=CUSTOMERS.reduce((s,c)=>s+c.dec,0);
+  // Also compute collected (received only) per month
+  let octRecv=0, novRecv=0, decRecv=0;
+  CUSTOMERS.forEach(c=>{
+    const st=getCollStatus(c.name);
+    if(st.oct==='received' && c.oct>0) octRecv+=c.oct;
+    if(st.nov==='received' && c.nov>0) novRecv+=c.nov;
+    if(st.dec==='received' && c.dec>0) decRecv+=c.dec;
+  });
+  // Q1 spillover display — sum of deferred December amounts
+  let q1Deferred=0;
+  CUSTOMERS.forEach(c=>{
+    const st=getCollStatus(c.name);
+    if(st.dec==='deferred' && c.dec>0) q1Deferred+=c.dec;
+  });
+  const recv=octRecv+novRecv+decRecv;
+  return {oct,nov,dec,total:oct+nov+dec,octRecv,novRecv,decRecv,recv,q1Deferred};
+}
+function pipeTotals(){
+  return PIPELINE.reduce((s,p)=>s+p.amt,0);
+}
+function pipeByTemp(t){ return PIPELINE.filter(p=>p.temp===t); }
+function pipeSum(arr){ return arr.reduce((s,p)=>s+p.amt,0); }
+
+// ── HEADER ───────────────────────────────────────────────────────────────────
+function renderHeader(){
+  const ct=colTotals();
+  const pt=pipeTotals();
+  document.getElementById('hCollections').textContent=fmtNum(ct.total);
+  document.getElementById('hPipeline').textContent=fmtNum(pt);
+  document.getElementById('hCombined').textContent=fmtNum(ct.total+pt);
+}
+
+// ── OVERVIEW ─────────────────────────────────────────────────────────────────
+function renderOverview(){
+  const ct=colTotals();
+  const pt=pipeTotals();
+  const custCount=CUSTOMERS.filter(c=>c.oct||c.nov||c.dec).length;
+
+  document.getElementById('s-oct').textContent=fmtNum(ct.oct);
+  document.getElementById('s-nov').textContent=fmtNum(ct.nov);
+  document.getElementById('s-dec').textContent=fmtNum(ct.dec);
+  document.getElementById('s-total').textContent=fmtNum(ct.total);
+  document.getElementById('s-total-sub').textContent=custCount+' active customers';
+  document.getElementById('s-pipeline').textContent=fmtNum(pt);
+  document.getElementById('s-pipeline-sub').textContent=PIPELINE.length+' opportunities';
+  document.getElementById('s-combined').textContent=fmtNum(ct.total+pt);
+
+  const tbody=document.getElementById('overview-body');
+  tbody.innerHTML='';
+  const sorted=[...CUSTOMERS].sort((a,b)=>(b.oct+b.nov+b.dec)-(a.oct+a.nov+a.dec));
+  sorted.forEach(c=>{
+    const tot=c.oct+c.nov+c.dec;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="name">${c.name}</td>
+      <td><span class="type-pill customer">Customer</span></td>
+      <td class="mono m-oct">${fmtCAD(c.oct)}</td>
+      <td class="mono m-nov">${fmtCAD(c.nov)}</td>
+      <td class="mono m-dec">${fmtCAD(c.dec)}</td>
+      <td class="mono ${tot?'highlight':''}">${tot?fmtNum(tot):'<span class="zero">—</span>'}</td>
+      <td><span class="temp-badge Confirmed"><span class="dot"></span>Customer</span></td>
+      <td>${c.upsell?`<span class="upsell-tag">↑ $${c.upsellAmt.toLocaleString()}</span>`:'<span class="zero">—</span>'}</td>
+    `;
+    tr.addEventListener('click',()=>openDrawer(c,'customer'));
+    tbody.appendChild(tr);
+  });
+  const pSorted=[...PIPELINE].sort((a,b)=>{const o={Hot:0,Warm:1,Cold:2,Confirmed:3};return (o[a.temp]||0)-(o[b.temp]||0)||b.amt-a.amt;});
+  pSorted.forEach(p=>{
+    const tr=document.createElement('tr');
+    const mth=p.closeDate?p.closeDate.split('-')[1]:'';
+    const isOct=mth==='10',isNov=mth==='11',isDec=mth==='12';
+    tr.innerHTML=`
+      <td class="name">${p.name}${p.isNew?'<span class="new-tag">NEW</span>':''}</td>
+      <td><span class="type-pill opportunity">Opportunity</span></td>
+      <td class="mono m-oct">${isOct?'<span style="color:var(--dim)">'+p.currency+'</span> '+fmtNum(p.amt):'<span class="zero">—</span>'}</td>
+      <td class="mono m-nov">${isNov?'<span style="color:var(--dim)">'+p.currency+'</span> '+fmtNum(p.amt):'<span class="zero">—</span>'}</td>
+      <td class="mono m-dec">${isDec?'<span style="color:var(--dim)">'+p.currency+'</span> '+fmtNum(p.amt):'<span class="zero">—</span>'}</td>
+      <td class="mono highlight"><span style="font-size:10px;color:var(--dim)">${p.currency}</span> ${fmtNum(p.amt)}</td>
+      <td><span class="temp-badge ${p.temp}" onclick="event.stopPropagation();cyclePipe(event,'${p.name}')"><span class="dot"></span>${p.temp}</span></td>
+      <td><span class="zero">—</span></td>
+    `;
+    tr.addEventListener('click',()=>openDrawer(p,'pipeline'));
+    tbody.appendChild(tr);
+  });
+
+  const tfoot=document.getElementById('overview-total');
+  const ptot=PIPELINE.reduce((s,p)=>s+p.amt,0);
+  tfoot.innerHTML=`
+    <td colspan="2">Total</td>
+    <td class="mono m-oct">${fmtNum(ct.oct)}</td>
+    <td class="mono m-nov">${fmtNum(ct.nov)}</td>
+    <td class="mono m-dec">${fmtNum(ct.dec)}</td>
+    <td class="mono highlight">${fmtNum(ct.total+ptot)}</td>
+    <td colspan="2"></td>
+  `;
+}
+
+// ── COLLECTIONS ──────────────────────────────────────────────────────────────
+function updateScardActual(prefix, recv, proj, color){
+  const recvEl=document.getElementById('sc-'+prefix+'-recv');
+  const projEl=document.getElementById('sc-'+prefix+'-proj');
+  const barEl=document.getElementById('sc-'+prefix+'-bar');
+  if(!recvEl) return;
+  if(recv>0){
+    recvEl.style.display='';
+    recvEl.textContent='✓ '+fmtNum(recv)+' collected';
+    if(projEl) projEl.textContent='of '+fmtNum(proj)+' projected';
+  } else {
+    recvEl.style.display='none';
+    if(projEl) projEl.textContent='';
+  }
+  if(barEl && proj>0){
+    barEl.style.width=Math.min(100,(recv/proj*100)).toFixed(1)+'%';
+  } else if(barEl){
+    barEl.style.width='0%';
+  }
+}
+
+function cellContent(c, month){
+  const st=getCollStatus(c.name);
+  const amt=c[month];
+  if(amt===0) return '<span class="zero">—</span>';
+  const badge=statusBadge(st[month]);
+  if(st[month]==='deferred'){
+    const nextLabel={oct:'→ Nov',nov:'→ Dec',dec:'→ Q1 2027'}[month];
+    return `<span class="deferred-orig">${fmtNum(amt)}</span><span class="deferred-to">${nextLabel}</span>`;
+  }
+  return fmtNum(amt)+badge;
+}
+
+function renderCollections(){
+  const ct=colTotals();
+  const actOct=CUSTOMERS.filter(c=>c.oct>0).length;
+  const actNov=CUSTOMERS.filter(c=>c.nov>0).length;
+  const actDec=CUSTOMERS.filter(c=>c.dec>0).length;
+  const actTotal=CUSTOMERS.filter(c=>c.oct||c.nov||c.dec).length;
+
+  // Projected values on main scard
+  document.getElementById('sc-oct').textContent=fmtNum(ct.oct);
+  document.getElementById('sc-nov').textContent=fmtNum(ct.nov);
+  document.getElementById('sc-dec').textContent=fmtNum(ct.dec);
+  document.getElementById('sc-total').textContent=fmtNum(ct.total);
+
+  // Sub labels
+  const octN=document.getElementById('sc-oct-n'); if(octN) octN.textContent=actOct+' accounts';
+  const novN=document.getElementById('sc-nov-n'); if(novN) novN.textContent=actNov+' accounts';
+  const decN=document.getElementById('sc-dec-n'); if(decN) decN.textContent=actDec+' accounts';
+  const totN=document.getElementById('sc-total-n'); if(totN) totN.textContent=actTotal+' customers';
+
+  // Actual/progress bars
+  updateScardActual('oct', ct.octRecv, ct.oct);
+  updateScardActual('nov', ct.novRecv, ct.nov);
+  updateScardActual('dec', ct.decRecv, ct.dec);
+  updateScardActual('total', ct.recv, ct.total);
+
+  // Q1 spillover card
+  const q1Card=document.getElementById('sc-q1-card');
+  if(q1Card){
+    if(ct.q1Deferred>0){
+      q1Card.style.display='';
+      document.getElementById('sc-q1').textContent=fmtNum(ct.q1Deferred);
+      const dCount=CUSTOMERS.filter(c=>getCollStatus(c.name).dec==='deferred'&&c.dec>0).length;
+      document.getElementById('sc-q1-n').textContent=dCount+' account'+(dCount!==1?'s':'')+' deferred from Dec';
+    } else {
+      q1Card.style.display='none';
+    }
+  }
+
+  const tbody=document.getElementById('col-body');
+  tbody.innerHTML='';
+  const sorted=[...CUSTOMERS].sort((a,b)=>(b.oct+b.nov+b.dec)-(a.oct+a.nov+a.dec));
+  sorted.forEach(c=>{
+    const tot=c.oct+c.nov+c.dec;
+    const st=getCollStatus(c.name);
+    const hasTrail=(S.audit||[]).some(e=>e.entity===c.name);
+    const esc=escapeName(c.name);
+    const nm=c.name.replace(/'/g,"\\'");
+
+    // Build inline status buttons for a month — only if that month has an amount
+    function mkBtn(month){
+      if(!c[month]) return '<span class="zero" style="font-size:10px;">—</span>';
+      const s=st[month];
+      const lbl={oct:'Oct',nov:'Nov',dec:'Dec'}[month];
+      return `<span class="status-pill-wrap">
+        <button class="sbtn sbtn-recv${s==='received'?' active':''}" onclick="event.stopPropagation();setCollStatus('${nm}','${month}','received')" title="Mark ${lbl} as received">✓</button>
+        <button class="sbtn sbtn-defer${s==='deferred'?' active':''}" onclick="event.stopPropagation();setCollStatus('${nm}','${month}','deferred')" title="Defer ${lbl} to next month">↷</button>
+      </span>`;
+    }
+
+    const tr=document.createElement('tr');
+    tr.dataset.custName=c.name;
+    tr.innerHTML=`
+      <td class="name name-cell" style="position:relative;">
+        ${c.name}${c.isConverted?'<span class="new-tag" style="background:var(--green-dim);color:var(--green);border-color:var(--green);">CONVERTED</span>':''}
+        <span class="audit-icon${hasTrail?' has-trail':''}" title="View change log" onclick="event.stopPropagation();openAuditForItem('${nm}')">◎</span>
+      </td>
+      <td class="mono editable m-oct${statusCellClass(st.oct)}" onclick="event.stopPropagation();toggleColEdit('${nm}','oct',this)">${cellContent(c,'oct')}</td>
+      <td class="mono editable m-nov${statusCellClass(st.nov)}" onclick="event.stopPropagation();toggleColEdit('${nm}','nov',this)">${cellContent(c,'nov')}</td>
+      <td class="mono editable m-dec${statusCellClass(st.dec)}" onclick="event.stopPropagation();toggleColEdit('${nm}','dec',this)">${cellContent(c,'dec')}</td>
+      <td class="mono ${tot?'highlight':''}">${tot?fmtNum(tot):'<span class="zero">—</span>'}</td>
+      <td class="status-col" onclick="event.stopPropagation()">
+        <div class="status-col-inner">
+          <span class="status-col-lbl">Oct</span>${mkBtn('oct')}
+          <span class="status-col-lbl">Nov</span>${mkBtn('nov')}
+          <span class="status-col-lbl">Dec</span>${mkBtn('dec')}
+        </div>
+      </td>
+      <td>${c.upsell?`<span class="upsell-tag">↑ $${c.upsellAmt.toLocaleString()}</span>`:'<span class="zero">—</span>'}</td>
+    `;
+    tr.addEventListener('click',()=>openDrawer(c,'customer'));
+    tbody.appendChild(tr);
+
+    // Inline edit expand row — just number inputs + save/close/remove
+    const er=document.createElement('tr');
+    er.className='col-edit-row';
+    er.id='col-edit-'+esc;
+    er.style.display='none';
+    er.innerHTML=`<td colspan="7">
+      <div class="col-edit-bar">
+        <label>OCT</label><input id="ce-oct-${esc}" type="number" value="${c.oct||0}" onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter'){event.stopPropagation();saveColEdit('${nm}')}" />
+        <label>NOV</label><input id="ce-nov-${esc}" type="number" value="${c.nov||0}" onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter'){event.stopPropagation();saveColEdit('${nm}')}" />
+        <label>DEC</label><input id="ce-dec-${esc}" type="number" value="${c.dec||0}" onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter'){event.stopPropagation();saveColEdit('${nm}')}" />
+        <button class="btn primary" onclick="event.stopPropagation();saveColEdit('${nm}')">Save</button>
+        <button class="btn" onclick="event.stopPropagation();closeColEdit('${nm}')">✕</button>
+        <button class="danger-btn" style="width:auto;padding:4px 10px;font-size:11px;margin-left:12px;" onclick="event.stopPropagation();dangerAction('remove','${nm}',this)">✕ Remove Account</button>
+      </div>
+    </td>`;
+    tbody.appendChild(er);
+  });
+  const tfoot=document.getElementById('col-total');
+  if(tfoot) tfoot.innerHTML=`
+    <td>Total</td>
+    <td class="mono m-oct">${fmtNum(ct.oct)}</td>
+    <td class="mono m-nov">${fmtNum(ct.nov)}</td>
+    <td class="mono m-dec">${fmtNum(ct.dec)}</td>
+    <td class="mono highlight">${fmtNum(ct.total)}</td>
+    <td></td>
+    <td></td>
+  `;
+}
+
+// ── PIPELINE (with notes expand) ──────────────────────────────────────────────
+function renderPipeline(){
+  const hot=pipeByTemp('Hot'),warm=pipeByTemp('Warm'),cold=pipeByTemp('Cold'),conf=pipeByTemp('Confirmed');
+  const sumHot=pipeSum(hot),sumWarm=pipeSum(warm),sumCold=pipeSum(cold),sumConf=pipeSum(conf);
+  const ptot=PIPELINE.reduce((s,p)=>s+p.amt,0);
+
+  // Summary cards
+  document.getElementById('sp-hot').textContent=fmtNum(sumHot);
+  document.getElementById('sp-hot-n').textContent=hot.length+' deals';
+  document.getElementById('sp-warm').textContent=fmtNum(sumWarm);
+  document.getElementById('sp-warm-n').textContent=warm.length+' deals';
+  document.getElementById('sp-cold').textContent=fmtNum(sumCold);
+  document.getElementById('sp-cold-n').textContent=cold.length+' deals';
+  document.getElementById('sp-total').textContent=fmtNum(ptot);
+  document.getElementById('sp-total-n').textContent=PIPELINE.length+' opportunities';
+
+  // Rating bar
+  document.getElementById('rb-hot-val').textContent=fmtNum(sumHot);
+  document.getElementById('rb-hot-n').textContent=hot.length+' deals';
+  document.getElementById('rb-warm-val').textContent=fmtNum(sumWarm);
+  document.getElementById('rb-warm-n').textContent=warm.length+' deals';
+  document.getElementById('rb-cold-val').textContent=fmtNum(sumCold);
+  document.getElementById('rb-cold-n').textContent=cold.length+' deals';
+  document.getElementById('rb-conf-val').textContent=fmtNum(sumConf);
+  document.getElementById('rb-conf-n').textContent=conf.length+' deals';
+  document.getElementById('rb-total-val').textContent=fmtNum(ptot);
+  document.getElementById('rb-total-n').textContent=PIPELINE.length+' total';
+  // bar segments
+  if(ptot>0){
+    document.getElementById('rb-seg-hot').style.width=(sumHot/ptot*100).toFixed(1)+'%';
+    document.getElementById('rb-seg-warm').style.width=(sumWarm/ptot*100).toFixed(1)+'%';
+    document.getElementById('rb-seg-conf').style.width=(sumConf/ptot*100).toFixed(1)+'%';
+    document.getElementById('rb-seg-cold').style.width=(sumCold/ptot*100).toFixed(1)+'%';
+  }
+
+  const tbody=document.getElementById('pipe-body');
+  tbody.innerHTML='';
+  const sorted=[...PIPELINE].sort((a,b)=>{const o={Hot:0,Warm:1,Confirmed:2,Cold:3};return (o[a.temp]||0)-(o[b.temp]||0)||b.amt-a.amt;});
+  sorted.forEach(p=>{
+    const mthStr=p.closeDate?({10:'Oct',11:'Nov',12:'Dec'}[p.closeDate.split('-')[1]]||p.closeDate):'–';
+    const isExpanded=expandedRows.has(p.name);
+    const noteCount=(p.notes||[]).length;
+
+    // Main row
+    const tr=document.createElement('tr');
+    tr.dataset.pipeName=p.name;
+    tr.innerHTML=`
+      <td class="name">
+        <div class="pipe-name-row">
+          <button class="expand-btn${isExpanded?' open':''}" title="Show/hide notes" onclick="event.stopPropagation();toggleNotes('${p.name}',this)">
+            ${isExpanded?'▾':'▸'}
+          </button>
+          ${p.name}${p.isNew?'<span class="new-tag">NEW</span>':''}
+        </div>
+      </td>
+      <td><span class="type-pill">${p.stage}</span></td>
+      <td>${p.country}</td>
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);">${mthStr} 2026</span></td>
+      <td class="mono highlight">${fmtNum(p.amt)}</td>
+      <td><span class="curr-tag">${p.currency}</span></td>
+      <td><span class="temp-badge ${p.temp}" onclick="event.stopPropagation();cyclePipe(event,'${p.name}')"><span class="dot"></span>${p.temp}</span></td>
+    `;
+    tr.addEventListener('click',()=>openDrawer(p,'pipeline'));
+    tbody.appendChild(tr);
+
+    // Notes expansion row
+    const nr=document.createElement('tr');
+    nr.className='notes-row';
+    nr.dataset.notesFor=p.name;
+    nr.style.display=isExpanded?'':'none';
+    nr.innerHTML=`<td colspan="7"><div class="notes-cell" id="notes-cell-${escapeName(p.name)}"></div></td>`;
+    tbody.appendChild(nr);
+    if(isExpanded) renderNotesCell(p);
+  });
+}
+
+function escapeName(name){ return name.replace(/[^a-zA-Z0-9]/g,'_'); }
+
+function renderNotesCell(p){
+  const cell=document.getElementById('notes-cell-'+escapeName(p.name));
+  if(!cell) return;
+  const notes=p.notes||[];
+  let html='';
+  notes.forEach(n=>{
+    html+=`<div class="notes-entry">
+      <div class="notes-dot"></div>
+      <div>
+        <div class="notes-text">${escHtml(n.text)}</div>
+        <div class="notes-meta">${n.date||''}</div>
+      </div>
+    </div>`;
+  });
+  html+=`<div class="add-note-row">
+    <input id="note-input-${escapeName(p.name)}" placeholder="Add a note…" onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter'){event.stopPropagation();saveNote('${p.name}')}" />
+    <button class="add-note-btn" onclick="event.stopPropagation();saveNote('${p.name}')">+ Add</button>
+  </div>`;
+  cell.innerHTML=html;
+}
+
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function toggleNotes(name, btn){
+  if(expandedRows.has(name)){
+    expandedRows.delete(name);
+    btn.textContent='▸';
+    btn.classList.remove('open');
+    const nr=document.querySelector(`[data-notes-for="${CSS.escape(name)}"]`);
+    if(nr) nr.style.display='none';
+  } else {
+    expandedRows.add(name);
+    btn.textContent='▾';
+    btn.classList.add('open');
+    const nr=document.querySelector(`[data-notes-for="${CSS.escape(name)}"]`);
+    if(nr){ nr.style.display=''; }
+    const p=PIPELINE.find(x=>x.name===name);
+    if(p) renderNotesCell(p);
+  }
+}
+
+function saveNote(name){
+  const inputId='note-input-'+escapeName(name);
+  const input=document.getElementById(inputId);
+  if(!input) return;
+  const text=input.value.trim();
+  if(!text){ toast('Enter a note first'); return; }
+  const p=PIPELINE.find(x=>x.name===name);
+  if(!p) return;
+  if(!p.notes) p.notes=[];
+  const entry={text,date:todayLabel()};
+  p.notes.push(entry);
+
+  // Persist to state
+  const k='pipe_'+name;
+  if(!S[k]) S[k]={};
+  S[k].notes=p.notes;
+  // Also update newProspects if it's a new one
+  if(p.isNew && S.newProspects){
+    const np=S.newProspects.find(x=>x.name===name);
+    if(np) np.notes=p.notes;
+  }
+  saveState(S);
+
+  renderNotesCell(p);
+  toast('Note saved for '+name);
+}
+
+// ── DRILL DOWN ───────────────────────────────────────────────────────────────
+let activeDrill=null;
+function toggleDrill(month, section){
+  const panelId = section==='col' ? 'drill-panel-col' : 'drill-panel';
+  const panel=document.getElementById(panelId);
+  const cardId=(section==='col'?'card-'+month+'-c':'card-'+month);
+  if(activeDrill===month+section){ closeDrill(section); return; }
+  activeDrill=month+section;
+  ['oct','nov','dec'].forEach(m=>{
+    const cid=section==='col'?'card-'+m+'-c':'card-'+m;
+    const el=document.getElementById(cid);
+    if(el) el.classList.remove('selected');
+  });
+  document.getElementById(cardId).classList.add('selected');
+  const names={oct:'October',nov:'November',dec:'December'};
+  if(section==='col'){
+    document.getElementById('drill-title-col').textContent=names[month]+' Collections Breakdown';
+    const body=document.getElementById('drill-body-col');
+    body.innerHTML='';
+    let tot=0;
+    CUSTOMERS.filter(c=>c[month]>0).sort((a,b)=>b[month]-a[month]).forEach(c=>{
+      tot+=c[month];
+      body.innerHTML+=`<tr><td class="name">${c.name}</td><td class="mono highlight">${fmtNum(c[month])}</td><td>${c.upsell?'<span class="upsell-tag">↑ $'+c.upsellAmt.toLocaleString()+'</span>':'–'}</td></tr>`;
+    });
+    body.innerHTML+=`<tr class="total-row"><td>Total</td><td class="mono highlight">${fmtNum(tot)}</td><td></td></tr>`;
+  } else {
+    document.getElementById('drill-title').textContent=names[month]+' Breakdown';
+    const body=document.getElementById('drill-body');
+    body.innerHTML='';
+    const mthNum={'oct':'10','nov':'11','dec':'12'}[month];
+    let tot=0;
+    CUSTOMERS.filter(c=>c[month]>0).sort((a,b)=>b[month]-a[month]).forEach(c=>{
+      tot+=c[month];
+      body.innerHTML+=`<tr><td class="name">${c.name}</td><td><span class="type-pill customer">Customer</span></td><td class="mono m-${month} highlight">${fmtNum(c[month])}</td><td><span class="curr-tag">CAD</span></td></tr>`;
+    });
+    PIPELINE.filter(p=>p.closeDate&&p.closeDate.split('-')[1]===mthNum).forEach(p=>{
+      body.innerHTML+=`<tr><td class="name">${p.name}</td><td><span class="type-pill opportunity">Opportunity</span></td><td class="mono highlight">${fmtNum(p.amt)}</td><td><span class="curr-tag">${p.currency}</span></td></tr>`;
+    });
+  }
+  panel.classList.add('show');
+}
+function closeDrill(section){
+  activeDrill=null;
+  const panelId=section==='col'?'drill-panel-col':'drill-panel';
+  document.getElementById(panelId).classList.remove('show');
+  ['oct','nov','dec'].forEach(m=>{
+    const cid=section==='col'?'card-'+m+'-c':'card-'+m;
+    const el=document.getElementById(cid);
+    if(el) el.classList.remove('selected');
+  });
+}
+
+// ── DRAWER ───────────────────────────────────────────────────────────────────
+let drawerItem=null, drawerType=null;
+function openDrawer(item, type){
+  drawerItem=item; drawerType=type;
+  document.getElementById('d-name').textContent=item.name;
+  if(type==='customer'){
+    document.getElementById('d-tag').textContent='CUSTOMER · COLLECTIONS';
+    document.getElementById('d-type').textContent='Existing Customer';
+    document.getElementById('d-val').textContent=fmtNum(item.oct+item.nov+item.dec)+' CAD';
+    document.getElementById('d-stage-row').style.display='none';
+    document.getElementById('d-market-row').style.display='none';
+    document.getElementById('d-comment-row').style.display='none';
+    document.getElementById('d-monthly-edit').style.display='block';
+    document.getElementById('d-oct').value=item.oct||0;
+    document.getElementById('d-nov').value=item.nov||0;
+    document.getElementById('d-dec').value=item.dec||0;
+    document.getElementById('ratePicker').style.display='none';
+    document.getElementById('d-convert-row').style.display='none';
+  } else {
+    const latestNote=(item.notes&&item.notes.length>0)?item.notes[item.notes.length-1].text:'No notes yet.';
+    document.getElementById('d-tag').textContent=(item.country||'').toUpperCase()+' · '+(item.stage||'').toUpperCase();
+    document.getElementById('d-type').textContent='Pipeline Opportunity';
+    document.getElementById('d-val').textContent=fmtNum(item.amt)+' '+(item.currency||'CAD');
+    document.getElementById('d-stage').textContent=item.stage||'–';
+    document.getElementById('d-market').textContent=item.country||'–';
+    document.getElementById('d-comment').textContent=latestNote;
+    document.getElementById('d-stage-row').style.display='';
+    document.getElementById('d-market-row').style.display='';
+    document.getElementById('d-comment-row').style.display='';
+    document.getElementById('d-monthly-edit').style.display='none';
+    document.getElementById('ratePicker').style.display='flex';
+    document.getElementById('d-convert-row').style.display='block';
+    updateRateUI(item.temp);
+  }
+  document.getElementById('drawer').classList.add('show');
+  document.getElementById('drawerOverlay').classList.add('show');
+}
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('show');
+  document.getElementById('drawerOverlay').classList.remove('show');
+  drawerItem=null;
+}
+function updateRateUI(temp){
+  document.querySelectorAll('.ratebtn').forEach(b=>{
+    b.classList.toggle('on',b.dataset.rate===temp);
+  });
+}
+document.getElementById('ratePicker').addEventListener('click',e=>{
+  const btn=e.target.closest('.ratebtn');
+  if(!btn||!drawerItem) return;
+  drawerItem.temp=btn.dataset.rate;
+  const k='pipe_'+drawerItem.name;
+  if(!S[k]) S[k]={};
+  S[k].temp=btn.dataset.rate;
+  saveState(S);
+  updateRateUI(btn.dataset.rate);
+  renderAll(); toast(drawerItem.name+' → '+btn.dataset.rate);
+});
+function saveMonthly(){
+  if(!drawerItem) return;
+  const prevOct=drawerItem.oct, prevNov=drawerItem.nov, prevDec=drawerItem.dec;
+  drawerItem.oct=parseFloat(document.getElementById('d-oct').value)||0;
+  drawerItem.nov=parseFloat(document.getElementById('d-nov').value)||0;
+  drawerItem.dec=parseFloat(document.getElementById('d-dec').value)||0;
+  const k='cust_'+drawerItem.name;
+  S[k]={oct:drawerItem.oct,nov:drawerItem.nov,dec:drawerItem.dec};
+  saveState(S);
+  const parts=[];
+  if(drawerItem.oct!==prevOct) parts.push(`Oct: ${fmtAmt(prevOct)} → ${fmtAmt(drawerItem.oct)}`);
+  if(drawerItem.nov!==prevNov) parts.push(`Nov: ${fmtAmt(prevNov)} → ${fmtAmt(drawerItem.nov)}`);
+  if(drawerItem.dec!==prevDec) parts.push(`Dec: ${fmtAmt(prevDec)} → ${fmtAmt(drawerItem.dec)}`);
+  if(parts.length) logAudit(drawerItem.name, 'Amounts updated — '+parts.join(', '), 'edit');
+  document.getElementById('d-val').textContent=fmtNum(drawerItem.oct+drawerItem.nov+drawerItem.dec)+' CAD';
+  renderAll(); toast('Amounts saved for '+drawerItem.name);
+}
+
+// ── CYCLE TEMP INLINE ────────────────────────────────────────────────────────
+function cyclePipe(e,name){
+  e.stopPropagation();
+  const p=PIPELINE.find(x=>x.name===name);
+  if(!p) return;
+  const prev=p.temp;
+  p.temp=tempCycle[p.temp]||'Warm';
+  const k='pipe_'+p.name;
+  if(!S[k]) S[k]={};
+  S[k].temp=p.temp;
+  saveState(S);
+  logAudit(p.name, `Status changed: ${prev} → ${p.temp}`, 'edit');
+  renderAll(); toast(p.name+' → '+p.temp);
+}
+
+// ── ADD PROSPECT ─────────────────────────────────────────────────────────────
+function openAddModal(){
+  document.getElementById('addModal').classList.add('show');
+  document.getElementById('modalOverlay').classList.add('show');
+  document.getElementById('f-name').focus();
+}
+function closeAddModal(){
+  document.getElementById('addModal').classList.remove('show');
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+function addProspect(){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){toast('Please enter a name');return;}
+  const val=parseFloat(document.getElementById('f-val').value)||0;
+  const curr=document.getElementById('f-curr').value;
+  const date=document.getElementById('f-date').value||'2026-10';
+  const rating=document.getElementById('f-rating').value;
+  const stage=document.getElementById('f-stage').value;
+  const market=document.getElementById('f-market').value;
+  const notesText=document.getElementById('f-notes').value.trim();
+  const initialNotes=notesText?[{text:notesText,date:todayLabel()}]:[];
+  const newP={name,amt:val,currency:curr,closeDate:date,temp:rating,stage,country:market,notes:initialNotes,isNew:true};
+  PIPELINE.push(newP);
+  if(!S.newProspects) S.newProspects=[];
+  S.newProspects.push(newP);
+  saveState(S);
+  logAudit(name, `Added to pipeline — ${fmtAmt(val)} ${curr}, ${rating}`, 'add');
+  closeAddModal();
+  renderAll();
+  toast(name+' added to pipeline');
+  document.getElementById('f-name').value='';
+  document.getElementById('f-val').value='';
+  document.getElementById('f-notes').value='';
+}
+
+// ── INLINE COLLECTION EDIT ───────────────────────────────────────────────────
+let openColEditName = null;
+function toggleColEdit(name, month, cell){
+  const rowId = 'col-edit-'+escapeName(name);
+  if(openColEditName === name){
+    closeColEdit(name); return;
+  }
+  if(openColEditName) closeColEdit(openColEditName);
+  openColEditName = name;
+  const er = document.getElementById(rowId);
+  if(er){
+    er.style.display='';
+    const inp = document.getElementById('ce-'+month+'-'+escapeName(name));
+    if(inp){ inp.focus(); inp.select(); }
+  }
+}
+function closeColEdit(name){
+  const er = document.getElementById('col-edit-'+escapeName(name));
+  if(er) er.style.display='none';
+  if(openColEditName===name) openColEditName=null;
+}
+function saveColEdit(name){
+  const c = CUSTOMERS.find(x=>x.name===name);
+  if(!c) return;
+  const prevOct=c.oct, prevNov=c.nov, prevDec=c.dec;
+  const oct = parseFloat(document.getElementById('ce-oct-'+escapeName(name)).value)||0;
+  const nov = parseFloat(document.getElementById('ce-nov-'+escapeName(name)).value)||0;
+  const dec = parseFloat(document.getElementById('ce-dec-'+escapeName(name)).value)||0;
+  c.oct=oct; c.nov=nov; c.dec=dec;
+  const k='cust_'+name;
+  S[k]={oct,nov,dec};
+  // Clear receive/defer status for months that changed amount
+  const st=getCollStatus(name);
+  let changed=false;
+  if(oct!==prevOct&&st.oct!=='pending'){st.oct='pending';changed=true;}
+  if(nov!==prevNov&&st.nov!=='pending'){st.nov='pending';changed=true;}
+  if(dec!==prevDec&&st.dec!=='pending'){st.dec='pending';changed=true;}
+  if(changed) S['coll_status_'+name]=st;
+  saveState(S);
+  // Build change description
+  const parts=[];
+  if(oct!==prevOct) parts.push(`Oct: ${fmtAmt(prevOct)} → ${fmtAmt(oct)}`);
+  if(nov!==prevNov) parts.push(`Nov: ${fmtAmt(prevNov)} → ${fmtAmt(nov)}`);
+  if(dec!==prevDec) parts.push(`Dec: ${fmtAmt(prevDec)} → ${fmtAmt(dec)}`);
+  if(parts.length) logAudit(name, 'Projections updated — '+parts.join(', '), 'edit');
+  closeColEdit(name);
+  renderAll();
+  toast('Updated projections for '+name);
+}
+
+// ── CONVERT TO CUSTOMER ───────────────────────────────────────────────────────
+let convertingProspect = null;
+function openConvertModal(){
+  if(!drawerItem || drawerType!=='pipeline') return;
+  convertingProspect = drawerItem;
+  document.getElementById('convert-prospect-name').textContent = drawerItem.name;
+  // Pre-fill currency from pipeline entry
+  document.getElementById('cv-curr').value = drawerItem.currency||'CAD';
+  // Pre-fill month based on close date
+  const mth = drawerItem.closeDate ? drawerItem.closeDate.split('-')[1] : null;
+  document.getElementById('cv-oct').value = mth==='10' ? drawerItem.amt : 0;
+  document.getElementById('cv-nov').value = mth==='11' ? drawerItem.amt : 0;
+  document.getElementById('cv-dec').value = mth==='12' ? drawerItem.amt : 0;
+  document.getElementById('cv-upsell').value = '';
+  document.getElementById('cv-upsell-custom-row').style.display='none';
+  closeDrawer();
+  document.getElementById('convertModal').classList.add('show');
+  document.getElementById('convertOverlay').classList.add('show');
+}
+function closeConvertModal(){
+  document.getElementById('convertModal').classList.remove('show');
+  document.getElementById('convertOverlay').classList.remove('show');
+  convertingProspect = null;
+}
+document.getElementById('cv-upsell').addEventListener('change', function(){
+  document.getElementById('cv-upsell-custom-row').style.display = this.value==='custom' ? '' : 'none';
+});
+function confirmConvert(){
+  const p = convertingProspect;
+  if(!p) return;
+  const oct = parseFloat(document.getElementById('cv-oct').value)||0;
+  const nov = parseFloat(document.getElementById('cv-nov').value)||0;
+  const dec = parseFloat(document.getElementById('cv-dec').value)||0;
+  const upsellSel = document.getElementById('cv-upsell').value;
+  const upsellAmt = upsellSel==='custom'
+    ? (parseFloat(document.getElementById('cv-upsell-custom').value)||0)
+    : (parseFloat(upsellSel)||0);
+  const upsell = upsellAmt > 0;
+
+  // Remove from PIPELINE
+  const pIdx = PIPELINE.indexOf(p);
+  if(pIdx > -1) PIPELINE.splice(pIdx, 1);
+
+  // Remove from saved newProspects if applicable
+  if(S.newProspects){
+    S.newProspects = S.newProspects.filter(x=>x.name!==p.name);
+  }
+
+  // Remove pipeline state key
+  delete S['pipe_'+p.name];
+
+  // Add to CUSTOMERS
+  const newCust = {name:p.name, oct, nov, dec, upsell, upsellAmt, isConverted:true};
+  CUSTOMERS.push(newCust);
+
+  // Persist customer amounts
+  S['cust_'+p.name] = {oct, nov, dec};
+  if(!S.convertedCustomers) S.convertedCustomers=[];
+  S.convertedCustomers.push({name:p.name, oct, nov, dec, upsell, upsellAmt});
+
+  saveState(S);
+  logAudit(p.name, `Converted to Customer — ${fmtAmt(oct+nov+dec)} CAD projected`, 'convert');
+  closeConvertModal();
+  renderAll();
+  toast(p.name+' converted to Customer ✓');
+}
+
+// ── EXPORT CSV ───────────────────────────────────────────────────────────────
+function exportCSV(section){
+  let rows=[],headers=[];
+  if(section==='col'){
+    headers=['Account','October','November','December','Q4 Total','Upsell'];
+    CUSTOMERS.forEach(c=>rows.push([c.name,c.oct,c.nov,c.dec,c.oct+c.nov+c.dec,c.upsell?c.upsellAmt:'']));
+  } else if(section==='pipe'){
+    headers=['Opportunity','Stage','Market','Close Date','Value','Currency','Status','Latest Note'];
+    PIPELINE.forEach(p=>{
+      const ln=(p.notes&&p.notes.length>0)?p.notes[p.notes.length-1].text:'';
+      rows.push([p.name,p.stage,p.country,p.closeDate,p.amt,p.currency,p.temp,ln]);
+    });
+  } else {
+    headers=['Account','Type','October','November','December','Q4 Total','Currency','Status'];
+    CUSTOMERS.forEach(c=>rows.push([c.name,'Customer',c.oct,c.nov,c.dec,c.oct+c.nov+c.dec,'CAD','Confirmed']));
+    PIPELINE.forEach(p=>rows.push([p.name,'Opportunity','','','',p.amt,p.currency,p.temp]));
+  }
+  const csv=[headers,...rows].map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='USA1_Q4_2026_'+(section||'all')+'.csv';
+  a.click(); toast('CSV exported');
+}
+
+// ── CURRENCY RATES & BANNER ───────────────────────────────────────────────────
+// User-editable rates (stored in state so they persist)
+function getRates(){
+  return {
+    usdToCad: parseFloat(S.rateUsdCad)||1.412,
+    cadToAed: parseFloat(S.rateCadAed)||2.619
+  };
+}
+function updateRates(){
+  const r=getRates();
+  const inUsd=parseFloat(document.getElementById('rate-usd-cad').value);
+  const inAed=parseFloat(document.getElementById('rate-cad-aed').value);
+  if(inUsd>0) S.rateUsdCad=inUsd;
+  if(inAed>0) S.rateCadAed=inAed;
+  saveState(S);
+  // Recompute FX_RATES from live inputs
+  syncFxRates();
+  renderAll();
+}
+function syncFxRates(){
+  const r=getRates();
+  FX_RATES['USD'] = 1/r.usdToCad;        // CAD→USD
+  FX_RATES['AED'] = r.cadToAed;           // CAD→AED
+  const derived=(r.usdToCad*r.cadToAed);
+  const el=document.getElementById('rate-usd-aed-display');
+  if(el) el.textContent=derived.toFixed(3)+' AED';
+  const ratesDis=document.getElementById('fx-rates-display');
+  if(ratesDis) ratesDis.innerHTML=`1 USD = CA$${r.usdToCad}<br>1 CAD = AED ${r.cadToAed}<br>1 USD = AED ${derived.toFixed(3)}`;
+}
+function calcFx(){
+  const amt=parseFloat(document.getElementById('fx-amount').value)||0;
+  const from=document.getElementById('fx-from').value;
+  const r=getRates();
+  // Convert to CAD first
+  let inCAD;
+  if(from==='CAD') inCAD=amt;
+  else if(from==='USD') inCAD=amt*r.usdToCad;
+  else inCAD=amt/r.cadToAed;
+  document.getElementById('fx-out-cad').textContent='CA$'+Math.round(inCAD).toLocaleString('en-CA');
+  document.getElementById('fx-out-usd').textContent='US$'+Math.round(inCAD/r.usdToCad).toLocaleString('en-CA');
+  document.getElementById('fx-out-aed').textContent='AED '+Math.round(inCAD*r.cadToAed).toLocaleString('en-CA');
+}
+function renderFxTab(){
+  const r=getRates();
+  // Sync rate inputs if present
+  const usdEl=document.getElementById('rate-usd-cad');
+  const aedEl=document.getElementById('rate-cad-aed');
+  if(usdEl) usdEl.value=r.usdToCad;
+  if(aedEl) aedEl.value=r.cadToAed;
+  syncFxRates();
+  calcFx();
+  // Revenue table
+  const ct=colTotals();
+  const pt=pipeTotals();
+  const rows=[
+    ['Oct Collections', ct.oct],
+    ['Nov Collections', ct.nov],
+    ['Dec Collections', ct.dec],
+    ['Q4 Collections', ct.total],
+    ['Pipeline Value', pt],
+    ['Combined Q4', ct.total+pt],
+  ];
+  const tbody=document.getElementById('fx-rev-body');
+  if(!tbody) return;
+  tbody.innerHTML=rows.map(([lbl,cadVal])=>{
+    const usd=Math.round(cadVal/r.usdToCad).toLocaleString('en-CA');
+    const aed=Math.round(cadVal*r.cadToAed).toLocaleString('en-CA');
+    const cad=Math.round(cadVal).toLocaleString('en-CA');
+    return `<tr><td>${lbl}</td><td>CA$${cad}</td><td>US$${usd}</td><td>AED ${aed}</td></tr>`;
+  }).join('');
+}
+
+// YTD Target & Collected
+// Target stored in AED (user's native reporting currency), convert to CAD for internal math
+function getYtdTargetCAD(){
+  const r=getRates();
+  const targetAed=parseFloat(S.ytdTargetAed)||2500000;
+  return targetAed/r.cadToAed;
+}
+function getYtdCollectedCAD(){
+  // Base: 1,078,850 AED collected through Oct end (user-confirmed fixed figure)
+  const r=getRates();
+  const baseAed=parseFloat(S.ytdBaseAed)||1078850;
+  const baseCAD=baseAed/r.cadToAed;
+  // Add any Nov/Dec payments marked 'received'
+  let novRecv=0,decRecv=0;
+  CUSTOMERS.forEach(c=>{
+    const st=getCollStatus(c.name);
+    if(st.nov==='received') novRecv+=c.nov;
+    if(st.dec==='received') decRecv+=c.dec;
+  });
+  return baseCAD+novRecv+decRecv;
+}
+function getYtdQ4TotalCAD(){
+  return CUSTOMERS.reduce((s,c)=>s+c.oct+c.nov+c.dec,0);
+}
+function saveYtdTarget(){
+  const v=parseFloat(document.getElementById('ytd-target-input').value)||0;
+  if(v<=0){toast('Enter a valid target');return;}
+  S.ytdTargetAed=v; saveState(S);
+  renderAll(); toast('Year target updated');
+}
+function renderYtdBanner(){
+  const r=getRates();
+  const targetCAD=getYtdTargetCAD();
+  const collectedCAD=getYtdCollectedCAD();
+  const q4CAD=getYtdQ4TotalCAD();
+  const remaining=Math.max(0,targetCAD-collectedCAD);
+  const pct=targetCAD>0?Math.min(100,collectedCAD/targetCAD*100):0;
+  const q4pct=targetCAD>0?Math.min(100,q4CAD/targetCAD*100):0;
+
+  // Display in active currency
+  const targetDisp=sym()+Math.round(conv(targetCAD)).toLocaleString('en-CA');
+  const collDisp=sym()+Math.round(conv(collectedCAD)).toLocaleString('en-CA');
+  const remDisp=sym()+Math.round(conv(remaining)).toLocaleString('en-CA');
+
+  const targetEl=document.getElementById('ytd-target');
+  const collEl=document.getElementById('ytd-collected');
+  const remEl=document.getElementById('ytd-remaining');
+  const pctEl=document.getElementById('ytd-pct');
+  const barEl=document.getElementById('ytd-bar');
+  const barOctEl=document.getElementById('ytd-bar-oct');
+  const subEl=document.getElementById('ytd-collected-sub');
+
+  if(targetEl) targetEl.textContent=targetDisp;
+  if(collEl) collEl.textContent=collDisp;
+  if(remEl) remEl.textContent=remDisp;
+  if(pctEl) pctEl.textContent=pct.toFixed(1)+'% of annual target';
+  if(barEl) barEl.style.width=pct.toFixed(1)+'%';
+  if(barOctEl) barOctEl.style.width=q4pct.toFixed(1)+'%';
+
+  if(subEl){
+    const rr=getRates();
+    const baseAed=parseFloat(S.ytdBaseAed)||1078850;
+    const baseCAD=baseAed/rr.cadToAed;
+    const parts=[`Jan–Oct: ${sym()}${Math.round(conv(baseCAD)).toLocaleString('en-CA')}`];
+    let novRecv=0,decRecv=0;
+    CUSTOMERS.forEach(c=>{
+      const st=getCollStatus(c.name);
+      if(st.nov==='received') novRecv+=c.nov;
+      if(st.dec==='received') decRecv+=c.dec;
+    });
+    if(novRecv>0) parts.push(`Nov: ${sym()}${Math.round(conv(novRecv)).toLocaleString('en-CA')}`);
+    if(decRecv>0) parts.push(`Dec: ${sym()}${Math.round(conv(decRecv)).toLocaleString('en-CA')}`);
+    subEl.textContent=parts.join(' · ');
+  }
+
+  // Sync rate display
+  const ratesDis=document.getElementById('fx-rates-display');
+  if(ratesDis) ratesDis.innerHTML=`1 USD = CA$${r.usdToCad}<br>1 CAD = AED ${r.cadToAed}<br>1 USD = AED ${(r.usdToCad*r.cadToAed).toFixed(3)}`;
+
+  // Sync currency pills
+  document.querySelectorAll('.curr-pill').forEach(b=>b.classList.toggle('on',b.dataset.c===activeCurrency));
+}
+
+// ── PLAIN TEXT CURRENCY (for audit descriptions) ─────────────────────────────
+function fmtAmt(n){ return '$'+Math.round(n).toLocaleString(); }
+
+// ── AUDIT TRAIL ──────────────────────────────────────────────────────────────
+function logAudit(entity, desc, type){
+  if(!S.audit) S.audit=[];
+  const now=new Date();
+  const timeStr=now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  S.audit.unshift({entity,desc,type,time:timeStr});
+  if(S.audit.length>200) S.audit=S.audit.slice(0,200);
+  saveState(S);
+  // Update badge
+  const cnt=document.getElementById('auditCount');
+  if(cnt){cnt.textContent=S.audit.length;cnt.classList.add('has');}
+  // Refresh panel if open
+  if(document.getElementById('auditPanel').classList.contains('show')){
+    renderAuditList(_auditFilter);
+  }
+}
+let _auditFilter=null; // null=all, string=entity
+function renderAuditList(filterEntity){
+  _auditFilter=filterEntity;
+  const list=document.getElementById('auditList');
+  if(!list) return;
+  const entries=(S.audit||[]).filter(e=>!filterEntity||e.entity===filterEntity);
+  if(!entries.length){
+    list.innerHTML='<div class="audit-empty">No changes recorded yet</div>';
+    return;
+  }
+  list.innerHTML=entries.map(e=>`
+    <div class="audit-entry audit-type-${e.type||'edit'}">
+      <div class="audit-dot"></div>
+      <div>
+        <div class="audit-entry-name">${escHtml(e.entity)}</div>
+        <div class="audit-entry-desc">${escHtml(e.desc)}</div>
+      </div>
+      <div class="audit-entry-time">${e.time||''}</div>
+    </div>`).join('');
+}
+function openAuditGlobal(){
+  document.getElementById('auditPanelTitle').textContent='Change Log';
+  document.getElementById('auditPanelSub').textContent='All changes this session';
+  renderAuditList(null);
+  document.getElementById('auditPanel').classList.add('show');
+  document.getElementById('auditOverlay').classList.add('show');
+}
+function openAuditForItem(name){
+  document.getElementById('auditPanelTitle').textContent=name;
+  document.getElementById('auditPanelSub').textContent='Changes for this account';
+  renderAuditList(name);
+  document.getElementById('auditPanel').classList.add('show');
+  document.getElementById('auditOverlay').classList.add('show');
+}
+function closeAudit(){
+  document.getElementById('auditPanel').classList.remove('show');
+  document.getElementById('auditOverlay').classList.remove('show');
+}
+
+// ── DANGER ACTIONS (drop pipeline / remove account) ───────────────────────────
+let _dangerTimer=null;
+function dangerAction(type, name, btn){
+  if(btn.classList.contains('confirming')){
+    // Second click — execute
+    clearTimeout(_dangerTimer);
+    btn.classList.remove('confirming');
+    btn.textContent=type==='remove'?'Remove Account':'Drop Opportunity';
+    if(type==='remove'){
+      if(!S.removedCustomers) S.removedCustomers=[];
+      if(!S.removedCustomers.includes(name)) S.removedCustomers.push(name);
+      saveState(S);
+      logAudit(name,'Account removed from dashboard','remove');
+      toast(name+' removed from dashboard');
+      // Reload customers from baseline and re-apply overrides
+      location.reload();
+    } else if(type==='drop'){
+      if(!S.droppedPipeline) S.droppedPipeline=[];
+      if(!S.droppedPipeline.includes(name)) S.droppedPipeline.push(name);
+      saveState(S);
+      logAudit(name,'Opportunity dropped from pipeline','remove');
+      toast(name+' dropped from pipeline');
+      location.reload();
+    }
+  } else {
+    // First click — arm
+    btn.classList.add('confirming');
+    const origText=btn.textContent;
+    btn.textContent='⚠ Confirm?';
+    _dangerTimer=setTimeout(()=>{
+      btn.classList.remove('confirming');
+      btn.textContent=origText;
+    },3000);
+  }
+}
+
+// ── CMD+S SAVE FILE ───────────────────────────────────────────────────────────
+function saveFile(){
+  // Get the raw source — stored in a hidden textarea at load time
+  const srcEl=document.getElementById('__raw_src__');
+  if(!srcEl||!srcEl.value){
+    toast('⚠ Source not available — open the original file first');
+    return;
+  }
+  var src=srcEl.value;
+  const sJson=JSON.stringify(S);
+  const stateBlock=`<script id="__baked_state__">(function(){var d=${sJson};try{localStorage.setItem('${SK}',JSON.stringify(d));}catch(e){}window.__BAKED_STATE__=d;})()\x3c/script>`;
+  // Strip any existing baked state block
+  var out=src.replace(/<script id="__baked_state__"[\s\S]*?<\/script>\n?/,'');
+  // Insert after <head>
+  out=out.replace('<head>','<head>\n'+stateBlock+'\n');
+  // Update the raw source textarea with the new version so chained saves work
+  srcEl.value=out;
+  const blob=new Blob([out],{type:'text/html'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='Q4_2026_USA1_Revenue_Dashboard.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Dashboard saved ✓');
+}
+
+// ── LOCK SYSTEM ──────────────────────────────────────────────────────────────
+const LOCK_PIN = '9911';
+let _isLocked = true;
+
+function applyLockState(){
+  const bar = document.getElementById('lock-bar');
+  const icon = document.getElementById('lock-icon');
+  const status = document.getElementById('lock-status');
+  const btn = document.getElementById('lock-btn');
+  if(_isLocked){
+    document.body.classList.add('is-locked');
+    bar.classList.remove('unlocked');
+    icon.textContent = '🔒';
+    status.textContent = 'View only — enter code to edit';
+    btn.textContent = 'Unlock';
+  } else {
+    document.body.classList.remove('is-locked');
+    bar.classList.add('unlocked');
+    icon.textContent = '🔓';
+    status.textContent = 'Editing enabled';
+    btn.textContent = 'Lock';
+    // Record unlock time
+    const now = new Date();
+    const lbl = document.getElementById('lock-last-edit');
+    if(lbl) lbl.textContent = 'Unlocked at ' + now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  }
+}
+
+function toggleLock(){
+  if(_isLocked){
+    const pin = document.getElementById('lock-pin-input').value;
+    if(pin === LOCK_PIN){
+      _isLocked = false;
+      document.getElementById('lock-pin-input').value = '';
+      applyLockState();
+    } else {
+      const inp = document.getElementById('lock-pin-input');
+      inp.style.borderColor = 'var(--hot)';
+      inp.value = '';
+      inp.placeholder = 'Wrong code';
+      setTimeout(()=>{ inp.style.borderColor=''; inp.placeholder='····'; }, 1500);
+    }
+  } else {
+    _isLocked = true;
+    applyLockState();
+  }
+}
+
+// Apply lock on load
+applyLockState();
+
+// ── TEAM / VIEWER BAR ─────────────────────────────────────────────────────────
+function setViewerName(val){
+  val = val.trim();
+  if(!val) return;
+  try{ localStorage.setItem('viewer_name_'+SK, val); }catch(e){}
+  document.getElementById('my-viewer-name').textContent = val;
+}
+(function initViewerName(){
+  try{
+    const saved = localStorage.getItem('viewer_name_'+SK);
+    if(saved){
+      document.getElementById('my-viewer-name').textContent = saved;
+      document.getElementById('viewer-name-input').value = saved;
+    }
+  }catch(e){}
+  // Show last-updated from state
+  const lbl = document.getElementById('last-updated-lbl');
+  if(lbl && S.lastSaved){
+    lbl.textContent = 'Data as of ' + S.lastSaved;
+  }
+})();
+
+function copyShareLink(){
+  const url = location.href.split('#')[0];
+  navigator.clipboard.writeText(url).then(()=>toast('Link copied ✓')).catch(()=>{
+    prompt('Copy this link:', url);
+  });
+}
+
+// Stamp last-saved time into state whenever saveState is called
+const _origSaveState = saveState;
+// (already defined above — patch it)
+
+document.addEventListener('keydown',function(e){
+  if((e.metaKey||e.ctrlKey)&&e.key==='s'){
+    e.preventDefault();
+    saveFile();
+  }
+});
+
+// ── RESET ────────────────────────────────────────────────────────────────────
+function resetAll(e){
+  e&&e.preventDefault();
+  if(!confirm('Reset all rating changes, notes additions, and monthly edits to original values?')) return;
+  localStorage.removeItem(SK); location.reload();
+}
+
+// ── TABS ─────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tabbtn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tabbtn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ── RENDER ALL ───────────────────────────────────────────────────────────────
+function renderAll(){
+  renderHeader();
+  renderOverview();
+  renderCollections();
+  renderPipeline();
+  renderYtdBanner();
+  // If FX tab is active, refresh it too
+  if(document.getElementById('view-fx')&&document.getElementById('view-fx').classList.contains('active')){
+    renderFxTab();
+  }
+}
+// ── INIT: restore all editable fields from saved state ───────────────────────
+(function initFromState(){
+  // Restore custom rates into inputs
+  const r=getRates();
+  const usdEl=document.getElementById('rate-usd-cad');
+  const aedEl=document.getElementById('rate-cad-aed');
+  if(usdEl) usdEl.value=r.usdToCad;
+  if(aedEl) aedEl.value=r.cadToAed;
+  // Restore YTD target input
+  const tgtEl=document.getElementById('ytd-target-input');
+  if(tgtEl) tgtEl.value=parseFloat(S.ytdTargetAed)||2500000;
+  // Sync FX_RATES object from stored rates
+  syncFxRates();
+  // Restore currency pill active state
+  document.querySelectorAll('.curr-pill').forEach(b=>b.classList.toggle('on',b.dataset.c===activeCurrency));
+})();
+renderAll();
+// Init audit badge
+(function(){
+  const cnt=document.getElementById('auditCount');
+  if(cnt&&S.audit&&S.audit.length){cnt.textContent=S.audit.length;cnt.classList.add('has');}
+})();
+// Init FX tab on first open
+(function(){
+  const fxTab=document.querySelector('[data-tab="fx"]');
+  if(fxTab){
+    fxTab.addEventListener('click',function(){
+      setTimeout(function(){ renderFxTab(); calcFx(); },10);
+    });
+  }
+})();
+</script>
+
+
+
+<!-- Audit Panel -->
+<div id="auditOverlay" onclick="closeAudit()"></div>
+<div class="audit-panel" id="auditPanel">
+  <div class="audit-panel-head">
+    <div>
+      <div class="audit-panel-title" id="auditPanelTitle">Change Log</div>
+      <div class="audit-panel-sub" id="auditPanelSub">All changes this session</div>
+    </div>
+    <button class="audit-close" onclick="closeAudit()">✕</button>
+  </div>
+  <div class="audit-list" id="auditList"></div>
+</div>
+
+<!-- Global Audit Button -->
+<button class="audit-global-btn" onclick="openAuditGlobal()" title="View change log">
+  <span>Change Log</span>
+  <span class="audit-count" id="auditCount">0</span>
+</button>
+
+<textarea id="__raw_src__" style="display:none"></textarea>
+<script>
+// Capture raw page source into hidden textarea so saveFile() can do string-replace saves
+(function(){
+  try{
+    var src=document.documentElement.outerHTML;
+    // Store in the textarea (strip the textarea's own content to avoid recursion on re-saves)
+    var cleaned=src.replace(/<textarea id="__raw_src__"[^>]*>[\s\S]*?<\/textarea>/,
+      '<textarea id="__raw_src__" style="display:none"></textarea>');
+    document.getElementById('__raw_src__').value=cleaned;
+  }catch(e){}
+})();
+</script>
+</body></html>
